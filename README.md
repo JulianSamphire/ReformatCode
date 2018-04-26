@@ -39,6 +39,10 @@ An alternative method is to clone the repository and either copy of the file out
 
 Start the IDE back up and move the cursor around your code!
 
+**If nothing happenes make sure you have "Apply standardize format after ending line" turned on under:**
+
+**Options->Coding.**
+
 ## **Settings**
 
 Defaults are shown in parentheses `( )`  
