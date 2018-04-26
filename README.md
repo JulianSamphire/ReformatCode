@@ -28,7 +28,7 @@ Watch the video - https://youtu.be/IAVjh-xiO0w
 Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
 ## Getting Started
-([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=8s))
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=9s))
 
 The easiest way to install the script is to directly download it and place it into the Scripts folder of your Xojo installation.
 
