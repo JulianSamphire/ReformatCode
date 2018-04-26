@@ -25,7 +25,7 @@ If you read through the following and need a little help, please:
 
 Watch the video - https://youtu.be/IAVjh-xiO0w
 
-Ask questions on the forum - https://forum.xojo.com/47388-reformat-code-script
+Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
 ## Getting Started
 
@@ -173,4 +173,4 @@ and it will be converted to:
 
 You will still need to make sure that you correctly use ByRef before your parameter names. See the notes at the top of my [blog](https://blog.samphire.net/2017/01/22/windows-to-xojo-data-type-conversion/) about this.
 
-If you have any questions, feature requests or bug reports, please visit to the Xojo forum [thread](https://forum.xojo.com/47388-reformat-code-script) regarding this script.
+If you have any questions, feature requests or bug reports, please visit to the Xojo forum [thread](https://forum.xojo.com/47389-xojo-ide-reformat-code-script) regarding this script.
