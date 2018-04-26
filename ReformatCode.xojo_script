@@ -260,7 +260,7 @@ ReadPreference_ConstStorageLocation("ConstantStorageLocation", RC_ConstStorageLo
 ReadPreference("Prefix", RC_Prefix, "")
 
 'Set the constant defaults
-ReadPreference("DebugLevel", RC_DebugLevel, 2)
+ReadPreference("DebugLevel", RC_DebugLevel, 0)
 ReadPreference("PadParInside", RC_PadParInside, False)
 ReadPreference("PadParOutside", RC_PadParOutside, False)
 ReadPreference("PadEmptyParInside", RC_PadEmptyParInside, False)
