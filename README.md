@@ -126,7 +126,7 @@ Reports debug information (see `System.DebugLog` for more information). This set
 *Note: If you set your settings modules “Include In” settings (under advanced settings) to all unchecked then none of the constants you place inside will be included in your built application.*
 
 ## Code Replacements
-([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=12m22s))
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=13m22s))
 
 There are a set of replacements that happen when moving onto a new line which aid with coding:
 
