@@ -28,6 +28,7 @@ Watch the video - https://youtu.be/IAVjh-xiO0w
 Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
 ## Getting Started
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=8s))
 
 The easiest way to install the script is to directly download it and place it into the Scripts folder of your Xojo installation.
 
@@ -44,6 +45,7 @@ Start the IDE back up and move the cursor around your code!
 **Options->Coding.**
 
 ## **Settings**
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=2m58s))
 
 Defaults are shown in parentheses `( )`  
 Booleans can be `true,yes,1` or `false,no,0`
@@ -124,6 +126,7 @@ Reports debug information (see `System.DebugLog` for more information). This set
 *Note: If you set your settings modules “Include In” settings (under advanced settings) to all unchecked then none of the constants you place inside will be included in your built application.*
 
 ## Code Replacements
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=12m22s))
 
 There are a set of replacements that happen when moving onto a new line which aid with coding:
 
@@ -144,6 +147,7 @@ If you have come from other languages it will also help you with:
     If a != 1	if a <> 1
     
 ## Macros
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=14m44s))
 
 Macros have been implemented by replacing specially formatted strings with other content that is stored in the current project. As you move off the line containing the macro it is converted.
 
@@ -164,6 +168,7 @@ Macros was originally designed with automatic insertion of multi line macros, ho
 *Note: If you set your macro modules “Include In” settings (under advanced settings) to all unchecked then none of the constants you place inside will be included in your built application.*
 
 ## Windows Declares
+([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=20m53s))
 
 The ReformatCode script will attempt to resolve windows declares for you so you don’t need to look up the correct Xojo types. Just enter the variable type with a w_ before it and it will be converted to its relevant Xojo type when you move off the line. The list of conversion is taken from my [blog](https://blog.samphire.net/2017/01/22/windows-to-xojo-data-type-conversion/). If you see a * appear, it means that you should visit my blog and read the additional notes associated with that type.
 
