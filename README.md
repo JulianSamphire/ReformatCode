@@ -27,6 +27,10 @@ Watch the video - https://youtu.be/IAVjh-xiO0w
 
 Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
+**If nothing happenes make sure you have "Apply standardize format after ending line" turned on under:**
+
+**Options->Coding.**
+
 ## Getting Started
 ([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=9s))
 
