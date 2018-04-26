@@ -429,6 +429,11 @@ Sub CleanBlock()
           If RC_RemoveEmptyPar Then
             'strip out the ( as this is a ) and we want to remove empty ()
             s = Left(s, Len(s) - 1)
+            If right(s, 1) = " " Then
+              'remove the trailing space if there is one, we could check RC_PadParOutside for this but we do it this way just to be sure
+              s = left(s, len(s) - 1)
+            End If
+            
             skipToken = True
             
           Else
