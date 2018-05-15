@@ -554,8 +554,14 @@ Sub CleanBlock()
         If allowNextSpace Then
           s = s + " "
         End If
-        s = s + """" + ReplaceAll(TokenTextCurrent, """", """""") + """"
-        skipToken = True
+        If left(TokenTextCurrent, 2) = &u Then
+          'Special case for &u because its considered a string!
+          s = s + TokenTextCurrent
+          skipToken = True
+        Else
+          s = s + """" + ReplaceAll(TokenTextCurrent, """", """""") + """"
+          skipToken = True
+        End If
         
       Case TOKEN_UNMATCHEDQUOTES '373
         'Handle Unmatched Quotes
