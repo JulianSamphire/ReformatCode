@@ -327,6 +327,9 @@ Sub CleanBlock()
     Dim tokenChainEnded As Boolean = False
     Dim tokenChainClear As Boolean = False
     
+    'Keep track of the last found unicode literal so we can find it in Line(currentLineNumber) and check if it has quote around it
+    Dim lastUnicodeLiteral As Integer = 0
+    
     While NextToken = True
       
       Dim TokenTypeCurrent As Integer = TokenType
@@ -554,14 +557,26 @@ Sub CleanBlock()
         If allowNextSpace Then
           s = s + " "
         End If
-        If left(TokenTextCurrent, 2) = &u Then
+
+        If left(TokenTextCurrent, 2) = "&u" Then
           'Special case for &u because its considered a string!
-          s = s + TokenTextCurrent
-          skipToken = True
+          Dim found As Integer = InStr(lastUnicodeLiteral, Line(currentLineNumber), TokenTextCurrent)
+          If found > 0 Then
+            'We found an unicode literal...
+            lastUnicodeLiteral = found + Len(TokenTextCurrent)
+            If mid(Line(currentLineNumber), found - 1, 1) = """" Then
+              '...that had a quote before it
+              s = s + """" + TokenTextCurrent + """"
+            Else
+              '...that had no quote before it
+              s = s + TokenTextCurrent
+            End If
+          End If
+          
         Else
           s = s + """" + ReplaceAll(TokenTextCurrent, """", """""") + """"
-          skipToken = True
         End If
+        skipToken = True
         
       Case TOKEN_UNMATCHEDQUOTES '373
         'Handle Unmatched Quotes
