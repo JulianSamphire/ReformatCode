@@ -18,6 +18,7 @@ A reformat code script for the [Xojo IDE](https://www.xojo.com/) that has some u
 -   Code replacement, `a++`, `a+=1`, `if a!=1` etc.
 -   Macros, quickly insert pre-defined text with autocomplete description
 -   Automatic calculation of windows declare types
+-   New - Checks the line for mismatched parentheses and notifies you
 
 ## TL;DR - Where do I go for help?
 
@@ -123,6 +124,18 @@ If you set this value to true it will try to place a space before the comment to
 
 If you set this value to true it will try to place a space after the comment token. If you set it to false it will remove the space after the comment token, if you leave it blank it will not add/remove a space and will leave whatever is already there.
 
+    CheckMismatchedPar (true)
+    
+If you set this value to true it will check if there are matching parentheses on the line. If not it will add a comment to the end of the line notifying you of the fact.
+
+    MismatchedParComment (')
+    
+This is the comment type used for the mismatched parentheses notification.
+
+    MismatchedParMessage ("MISMATCHED PARENTHESES")
+    
+This is the message that is shown to notify you if there are mismatched parenthese on the line.
+
     DebugLevel (0)
 
 Reports debug information (see `System.DebugLog` for more information). This setting is off by default, setting to 1 will show some debug information, 2 will show detailed debug information.
@@ -143,7 +156,7 @@ There are a set of replacements that happen when moving onto a new line which ai
 
 The above section also works with dot notation e.g.:
 
-    window1.title+=”hello”	window1.title=window1.title+”hello”
+    window1.title+="hello"	window1.title=window1.title+"hello"
 
 If you have come from other languages it will also help you with:
 
