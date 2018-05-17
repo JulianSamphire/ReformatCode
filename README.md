@@ -134,7 +134,7 @@ This is the comment type used for the mismatched parentheses notification.
 
     MismatchedParMessage ("MISMATCHED PARENTHESES")
     
-This is the message that is shown to notify you if there are mismatched parenthese on the line.
+This is the message that is shown to notify you if there are mismatched parentheses on the line.
 
     DebugLevel (0)
 
