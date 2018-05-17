@@ -12,8 +12,11 @@ Dim RC_PadOperators As Boolean
 Dim RC_PadIIf As Boolean
 Dim RC_PadLineContinuation As Boolean
 Dim RC_Comment As String
-Dim RC_PadCommentBefore As String
-Dim RC_PadCommentAfter As String
+Dim RC_PadCommentBefore As String 'We use a string here instead of a boolean because this is a tristate variable
+Dim RC_PadCommentAfter As String 'We use a string here instead of a boolean because this is a tristate variable
+Dim RC_CheckMismatchedPar As Boolean
+Dim RC_MismatchedParComment As String
+Dim RC_MismatchedParMessage As String
 
 Dim RC_MacroStorageLocation As String
 
@@ -272,6 +275,9 @@ Sub LoadPreferences()
   ReadPreference("Comment", RC_Comment, "")
   ReadPreference("PadCommentBefore", RC_PadCommentBefore, "")
   ReadPreference("PadCommentAfter", RC_PadCommentAfter, "")
+  ReadPreference("CheckMismatchedPar", RC_CheckMismatchedPar, True)
+  ReadPreference("MismatchedParComment", RC_MismatchedParComment, "'")
+  ReadPreference("MismatchedParMessage", RC_MismatchedParMessage, "MISMATCHED PARENTHESES")
   
   'Set the macro storage location
   ReadPreference("MacroStorageLocation", RC_MacroStorageLocation, "Macro")
@@ -330,6 +336,9 @@ Sub CleanBlock()
     'Keep track of the last found unicode literal so we can find it in Line(currentLineNumber) and check if it has quote around it
     Dim lastUnicodeLiteral As Integer = 0
     
+    'Keep track of the number of parenthesis so we can check for a mismatch
+    Dim parCount As Integer = 0
+    
     While NextToken = True
       
       Dim TokenTypeCurrent As Integer = TokenType
@@ -363,6 +372,7 @@ Sub CleanBlock()
       'Main select
       Select Case TokenTypeCurrent 
       Case 40 '(
+        parCount = parCount + 1
         If RC_PadParOutside Then
           If TokenTypeBackOne = 45 Then '-
             'allow us to put the pad before the - so we end up with = -( not =- (
@@ -400,7 +410,7 @@ Sub CleanBlock()
           ElseIf TokenTypeBackOne = 45 And RC_PadOperators Then '-
             Select Case TokenTypeBackTwo
             Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_IF
-              '  *   +   -   /   <   =   >   \   ^    =             >=              <=              <>              IF
+              '  *   +   -   /   <   =   >   \   ^   =             >=              <=              <>              IF
               'put no space between - ( in ) >= -(
               'nor between - and ( in if -(
             Else
@@ -427,14 +437,15 @@ Sub CleanBlock()
         allowNextSpace = RC_PadParInside
         
       Case 41 ')
+        parCount = parCount - 1
         If TokenTypeBackOne = 40 Then
           '()
           If RC_RemoveEmptyPar Then
             'strip out the ( as this is a ) and we want to remove empty ()
             s = Left(s, Len(s) - 1)
-            If right(s, 1) = " " Then
+            If Right(s, 1) = " " Then
               'remove the trailing space if there is one, we could check RC_PadParOutside for this but we do it this way just to be sure
-              s = left(s, len(s) - 1)
+              s = Left(s, Len(s) - 1)
             End If
             
             skipToken = True
@@ -460,7 +471,7 @@ Sub CleanBlock()
         allowNextSpace = False
         
       Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP
-        '  *   +   -   /   <   =   >   \   ^    =             >=              <=              <>
+        '  *   +   -   /   <   =   >   \   ^   =             >=              <=              <>
         If ((TokenTypeCurrent = 43 And TokenTypeBackOne = 43) Or (TokenTypeCurrent = 45 And TokenTypeBackOne = 45)) And TokenTypeBackTwo = TOKEN_IDENTIFIER Then
           'handle a++ a--
           Dim pad As String = If(RC_PadOperators, " ", "")
@@ -557,14 +568,14 @@ Sub CleanBlock()
         If allowNextSpace Then
           s = s + " "
         End If
-
-        If left(TokenTextCurrent, 2) = "&u" Then
+        
+        If Left(TokenTextCurrent, 2) = "&u" Then
           'Special case for &u because its considered a string!
           Dim found As Integer = InStr(lastUnicodeLiteral, Line(currentLineNumber), TokenTextCurrent)
           If found > 0 Then
             'We found an unicode literal...
             lastUnicodeLiteral = found + Len(TokenTextCurrent)
-            If mid(Line(currentLineNumber), found - 1, 1) = """" Then
+            If Mid(Line(currentLineNumber), found - 1, 1) = """" Then
               '...that had a quote before it
               s = s + """" + TokenTextCurrent + """"
             Else
@@ -620,7 +631,7 @@ Sub CleanBlock()
                   End If
                   
                 Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_NOT
-                  '  *   +   -   /   <   =   >   \   ^    =             >=              <=              <>              NOT
+                  '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
                   'Drop the space if we follow the above so we can do a = 1 - -1
                   
                 Case Else
@@ -644,7 +655,7 @@ Sub CleanBlock()
                   End If
                   
                 Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_NOT
-                  '  *   +   -   /   <   =   >   \   ^    =             >=              <=              <>              NOT
+                  '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
                   'Drop the space if we follow the above so we can do a = a - -a
                   
                 Case Else
@@ -715,7 +726,30 @@ Sub CleanBlock()
         tokenChainClear = True
       End If
       
-    Wend    
+    Wend
+    
+    If parCount <> 0 And RC_CheckMismatchedPar Then
+      'Uh oh, we have mismatched parentheses
+      Debug("MISMATCHED PARENTHESES", 2)
+      
+      Dim comment As String = ""
+      If RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Or RC_PadCommentBefore = "" Then
+        comment = comment + " "
+      End If
+      comment = comment + RC_MismatchedParComment
+      If RC_PadCommentAfter = "true" Or RC_PadCommentAfter = "yes" Or RC_PadCommentAfter = "1" Or RC_PadCommentAfter = "" Then
+        comment = comment + " "
+      End If
+      comment = comment + RC_MismatchedParMessage
+      
+      Debug("remain=|" + RemainingLine.Trim().Left(Len(comment)).Trim() + "|", 2)
+      Debug("comment=|" + comment.Trim() + "|", 2)
+      
+      If RemainingLine.Trim().Left(Len(comment.Trim())) <> comment.Trim() Then
+        s = s + comment
+      End If
+      
+    End If
     
     'Add any left over characters to the line, like after a comment
     RenderRemainingLine(s)
@@ -839,9 +873,9 @@ Sub RenderRemainingLine(ByRef s As String)
     Dim sPos As Integer = RemainingLine.InStr("//")
     Dim rPos As Integer = RemainingLine.InStr("REM ")
     
-    Debug("aPos=" + str(aPos), 2)
-    Debug("sPos=" + str(sPos), 2)
-    Debug("rPos=" + str(rPos), 2)
+    Debug("aPos=" + Str(aPos), 2)
+    Debug("sPos=" + Str(sPos), 2)
+    Debug("rPos=" + Str(rPos), 2)
     
     If aPos > 0 And (aPos < sPos Or sPos = 0) And (aPos < rPos Or rPos = 0) Then
       commentPos = aPos + 1
@@ -881,7 +915,7 @@ Sub RenderRemainingLine(ByRef s As String)
       'PRE
       If Right(pre, 1) = " " Then
         If RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Or RC_PadCommentBefore = "" Then
-          ' There's a space there already and we want it there
+          'There's a space there already and we want it there
           preSpace = ""
         Else
           'Remove the space that is already there
@@ -890,7 +924,7 @@ Sub RenderRemainingLine(ByRef s As String)
         
       Else
         If RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Then
-          ' There's no space there and we want one
+          'There's no space there and we want one
           preSpace = " "
         End If
         
