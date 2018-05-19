@@ -18,7 +18,11 @@ A reformat code script for the [Xojo IDE](https://www.xojo.com/) that has some u
 -   Code replacement, `a++`, `a+=1`, `if a!=1` etc.
 -   Macros, quickly insert pre-defined text with autocomplete description
 -   Automatic calculation of windows declare types
--   New - Checks the line for mismatched parentheses and notifies you
+-   An error checking feature that will notify you if the line has:
+    -   mismatched parentheses
+    -   missing opening parenthesis
+    -   missing closing parenthesis
+    -   mismatched quotes
 
 ## TL;DR - Where do I go for help?
 
@@ -63,6 +67,8 @@ Use this setting to change the location where settings are located. You might wa
 
 If the prefix is set to Me then settings are read locally so you can change settings if you are in a class or module etc.
 
+*Note: If you set your settings modules “Include In” settings (under advanced settings) to all unchecked then none of the constants you place inside will be included in your built application.*
+
     Prefix (<empty>)
 
 If the setting is set, the prefix for all future settings will be based on that value, so setting it to `Test_` will change all settings in that project to require a `Test_` prefix. You can use this if you want to avoid naming conflicts in your projects.
@@ -72,7 +78,7 @@ If the setting is set, the prefix for all future settings will be based on that 
 Pad the inside of parentheses with a space. e.g. `a(b,c)` will become `a( b,c )`
 
     PadParOutside (false)
-
+    
 Pad the outside of parentheses with a space. e.g. `a(b,c)` will become `a (b,c)`
 
     PadEmptyParInside (false)
@@ -114,7 +120,7 @@ If there is an odd number of entries in ReplaceWords the whole setting will be i
 
     Comment (<empty>)
 
-If you want to ensure that all your comments follow the same format then enter your required comment type in here and all comments will be changed to this format: `', //, Rem`. If you don’t specify a comment type it will retain the type that is already there.
+If you want to ensure that all your comments follow the same format then enter your required comment type in here and all comments will be changed to this format: `'`, `//` or `Rem`. If you don’t specify a comment type it will retain the type that is already there.
 
     PadCommentBefore (<empty>)
 
@@ -124,23 +130,36 @@ If you set this value to true it will try to place a space before the comment to
 
 If you set this value to true it will try to place a space after the comment token. If you set it to false it will remove the space after the comment token, if you leave it blank it will not add/remove a space and will leave whatever is already there.
 
-    CheckMismatchedPar (true)
-    
-If you set this value to true it will check if there are matching parentheses on the line. If not it will add a comment to the end of the line notifying you of the fact.
+### Error Checking
 
-    MismatchedParComment (')
-    
-This is the comment type used for the mismatched parentheses notification.
+The error message will automatically be removed when you move off the line if the error is corrected without altering the format or spacing of the error message.
 
-    MismatchedParMessage ("MISMATCHED PARENTHESES")
-    
-This is the message that is shown to notify you if there are mismatched parentheses on the line.
+    MessageComment (')
+
+This is the comment type used for error message notifications. This setting can either be `'`, `//` or `Rem`.
+
+
+    MessageParMismatched (MISMATCHED PARENTHESES)
+
+This is the message that is shown to notify you if there are mismatched parentheses on the line. Setting this to `_` (underscore) will turn off checks for this setting and the error message will not be shown.
+
+    MessageParOpening (MISSING OPENING PARENTHESIS)
+
+This is the message that is shown to notify you if there is a missing opening parenthesis on the line. Setting this to `_` (underscore) will turn off checks for this setting and the error message will not be shown.
+
+    MessageParClosing (MISSING CLOSING PARENTHESIS)
+
+This is the message that is shown to notify you if there is a missing closing parenthesis on the line. Setting this to `_` (underscore) will turn off checks for this setting and the error message will not be shown.
+
+    MessageQuoteMismatched (MISMATCHED QUOTES)
+
+This is the message that is shown to notify you if there are mismatched quotes on the line. Setting this to `_` (underscore) will turn off checks for this setting and the error message will not be shown.
+
+### Debugging
 
     DebugLevel (0)
 
 Reports debug information (see `System.DebugLog` for more information). This setting is off by default, setting to 1 will show some debug information, 2 will show detailed debug information.
-
-*Note: If you set your settings modules “Include In” settings (under advanced settings) to all unchecked then none of the constants you place inside will be included in your built application.*
 
 ## Code Replacements
 ([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=13m22s))

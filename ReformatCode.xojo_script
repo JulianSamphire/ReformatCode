@@ -14,9 +14,11 @@ Dim RC_PadLineContinuation As Boolean
 Dim RC_Comment As String
 Dim RC_PadCommentBefore As String 'We use a string here instead of a boolean because this is a tristate variable
 Dim RC_PadCommentAfter As String 'We use a string here instead of a boolean because this is a tristate variable
-Dim RC_CheckMismatchedPar As Boolean
-Dim RC_MismatchedParComment As String
-Dim RC_MismatchedParMessage As String
+Dim RC_MessageComment As String
+Dim RC_MessageParMismatched As String
+Dim RC_MessageParOpening As String
+Dim RC_MessageParClosing As String
+Dim RC_MessageQuoteMismatched As String
 
 Dim RC_MacroStorageLocation As String
 
@@ -275,9 +277,11 @@ Sub LoadPreferences()
   ReadPreference("Comment", RC_Comment, "")
   ReadPreference("PadCommentBefore", RC_PadCommentBefore, "")
   ReadPreference("PadCommentAfter", RC_PadCommentAfter, "")
-  ReadPreference("CheckMismatchedPar", RC_CheckMismatchedPar, True)
-  ReadPreference("MismatchedParComment", RC_MismatchedParComment, "'")
-  ReadPreference("MismatchedParMessage", RC_MismatchedParMessage, "MISMATCHED PARENTHESES")
+  ReadPreference("MessageComment", RC_MessageComment, "'")
+  ReadPreference("MessageParMismatched", RC_MessageParMismatched, "MISMATCHED PARENTHESES")
+  ReadPreference("MessageParOpening", RC_MessageParOpening, "MISSING OPENING PARENTHESIS")
+  ReadPreference("MessageParClosing", RC_MessageParClosing, "MISSING CLOSING PARENTHESIS")
+  ReadPreference("MessageQuoteMismatched", RC_MessageQuoteMismatched, "MISMATCHED QUOTES")
   
   'Set the macro storage location
   ReadPreference("MacroStorageLocation", RC_MacroStorageLocation, "Macro")
@@ -310,7 +314,21 @@ Sub CleanBlock()
   
   LoadPreferences
   
-  InitWords
+  InitWords 
+  
+  'Build error strings so we don't need to rebuild them when we use them
+  Dim buildMessage As String = ""
+  buildMessage = buildMessage + If(RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Or RC_MessageComment = "rem", " ", "")
+  buildMessage = buildMessage + RC_MessageComment
+  buildMessage = buildMessage + If(RC_PadCommentAfter = "true" Or RC_PadCommentAfter = "yes" Or RC_PadCommentAfter = "1" Or RC_MessageComment = "rem", " ", "")
+  Dim expandedMessageParMismatched As String = If(RC_MessageParMismatched <> "", buildMessage + RC_MessageParMismatched, "")
+  Dim expandedMessageParOpening As String = If(RC_MessageParOpening <> "", buildMessage + RC_MessageParOpening, "")
+  Dim expandedRC_MessageParClosing As String = If(RC_MessageParClosing <> "", buildMessage + RC_MessageParClosing, "")
+  Dim expandedMessageQuoteMismatched As String = If(RC_MessageQuoteMismatched <> "", buildMessage + RC_MessageQuoteMismatched, "")
+  Debug("expandedMessageParMismatched=|" + expandedMessageParMismatched + "|", 2)
+  Debug("expandedMessageParOpening=|" + expandedMessageParOpening + "|", 2)
+  Debug("expandedRC_MessageParClosing=|" + expandedRC_MessageParClosing + "|", 2)
+  Debug("expandedMessageQuoteMismatched=|" + expandedMessageQuoteMismatched + "|", 2)
   
   Debug("Starting CleanBlock", 1)
   
@@ -338,6 +356,8 @@ Sub CleanBlock()
     
     'Keep track of the number of parenthesis so we can check for a mismatch
     Dim parCount As Integer = 0
+    'If we find a ) before a ( then set this to true
+    Dim parMismatch As Boolean = False
     
     While NextToken = True
       
@@ -438,6 +458,7 @@ Sub CleanBlock()
         
       Case 41 ')
         parCount = parCount - 1
+        If parCount < 0 Then parMismatch = True
         If TokenTypeBackOne = 40 Then
           '()
           If RC_RemoveEmptyPar Then
@@ -591,8 +612,17 @@ Sub CleanBlock()
         
       Case TOKEN_UNMATCHEDQUOTES '373
         'Handle Unmatched Quotes
+        
+        Dim tmp As String = Line(currentLineNumber)
+        If RC_MessageQuoteMismatched <> "" Then
+          If tmp.instr(expandedMessageQuoteMismatched) = 0 Then
+            'Add an error message onto the end of the line so we notice the problem if there isn't one there already
+            tmp = tmp + expandedMessageQuoteMismatched
+          End If
+          Line(currentLineNumber) = tmp
+        End If
+        
         'Do nothing with the line if quotes are mismatched as we could end up borking things
-        Line(currentLineNumber) = Line(currentLineNumber)
         'Break out of the current line and move onto the next, this line makes me feel dirty
         Continue For
         
@@ -728,31 +758,32 @@ Sub CleanBlock()
       
     Wend
     
-    If parCount <> 0 And RC_CheckMismatchedPar Then
-      'Uh oh, we have mismatched parentheses
-      Debug("MISMATCHED PARENTHESES", 2)
+    'Remove any error messages that exist at the end of the line
+    Dim rl As String = RemainingLine()
+    rl = rl.RemoveString(expandedMessageParMismatched)
+    rl = rl.RemoveString(expandedMessageParOpening)
+    rl = rl.RemoveString(expandedRC_MessageParClosing)
+    rl = rl.RemoveString(expandedMessageQuoteMismatched)
+    
+    'Check for out of order )( or missing ()
+    If (parCount < 0 And RC_MessageParOpening <> "") Or (parCount > 0 And RC_MessageParClosing <> "") Or (parMismatch And RC_MessageParMismatched <> "" And parCount = 0) Then
+      Debug("MISMATCH", 1)
+      Debug("parCount=" + str(parCount), 2)
+      Debug("parMismatch=" + If(parMismatch, "True", "False"), 2)
+      Debug("expandedMessageParOpening=|" + expandedMessageParOpening + "| expandedRC_MessageParClosing=|" + expandedRC_MessageParClosing + "| expandedMessageParMismatched=|" + expandedMessageParMismatched + "|", 2)
       
-      Dim comment As String = ""
-      If RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Or RC_PadCommentBefore = "" Then
-        comment = comment + " "
-      End If
-      comment = comment + RC_MismatchedParComment
-      If RC_PadCommentAfter = "true" Or RC_PadCommentAfter = "yes" Or RC_PadCommentAfter = "1" Or RC_PadCommentAfter = "" Then
-        comment = comment + " "
-      End If
-      comment = comment + RC_MismatchedParMessage
-      
-      Debug("remain=|" + RemainingLine.Trim().Left(Len(comment)).Trim() + "|", 2)
-      Debug("comment=|" + comment.Trim() + "|", 2)
-      
-      If RemainingLine.Trim().Left(Len(comment.Trim())) <> comment.Trim() Then
-        s = s + comment
+      If parCount > 0 Then
+        s = s + expandedRC_MessageParClosing
+      ElseIf parCount < 0 Then
+        s = s + expandedMessageParOpening
+      ElseIf (parCount = 0 And parMismatch) Then
+        s = s + expandedMessageParMismatched
       End If
       
     End If
     
     'Add any left over characters to the line, like after a comment
-    RenderRemainingLine(s)
+    RenderRemainingLine(rl, s)
     
     'strip off the leading space, doing it this way keeps the code cleaner as we dont have to put it all in a huge if
     If Left(s, 1) = " " Then
@@ -859,19 +890,19 @@ Function GetTokenText(ByRef TokenTextHistory() As String, reversePos As Integer)
   End If
 End Function
 
-Sub RenderRemainingLine(ByRef s As String)
+Sub RenderRemainingLine(rl As String, ByRef s As String)
   'If the line ends in a comment you will not get the token for a comment, but you will get the comment text in RemainingLine.
-  If RemainingLine <> "" Then
-    Debug("RemainingLine=|" + RemainingLine + "|", 1)
+  If rl <> "" Then
+    Debug("RemainingLine=|" + rl + "|", 1)
     
     Dim commentPos As Integer
     Dim comment As String
     Dim commentLen As Integer
     
     'Find the first comment in the RemainingLine
-    Dim aPos As Integer = RemainingLine.InStr("'")
-    Dim sPos As Integer = RemainingLine.InStr("//")
-    Dim rPos As Integer = RemainingLine.InStr("REM ")
+    Dim aPos As Integer = rl.InStr("'")
+    Dim sPos As Integer = rl.InStr("//")
+    Dim rPos As Integer = rl.InStr("REM ")
     
     Debug("aPos=" + Str(aPos), 2)
     Debug("sPos=" + Str(sPos), 2)
@@ -903,8 +934,8 @@ Sub RenderRemainingLine(ByRef s As String)
     
     If commentPos > 0 Then
       'We found a comment
-      Dim pre As String = Left(RemainingLine, commentPos - 1 - commentLen)
-      Dim post As String = Right(RemainingLine, Len(RemainingLine) - commentPos + 1)
+      Dim pre As String = Left(rl, commentPos - 1 - commentLen)
+      Dim post As String = Right(rl, Len(rl) - commentPos + 1)
       
       Debug("pre=|" + pre + "|", 2)
       Debug("post=|" + post + "|", 2)
@@ -950,7 +981,7 @@ Sub RenderRemainingLine(ByRef s As String)
       s = s + pre + preSpace + comment + postSpace + post
       
     Else
-      s = s + RemainingLine
+      s = s + rl
     End If
     
   End If
@@ -1000,3 +1031,15 @@ Sub Concat(Extends ByRef toString() As String, ByRef fromString() As String, Opt
     Redim fromString(-1)
   End If
 End Sub
+
+'Remove a string from inside another string, can remove first or all
+Function RemoveString(Extends source As String, remove As String, removeAllMatches As Boolean = True) As String
+  Dim c As Integer
+  Dim s As String = source
+  Do
+    c = s.instr(remove)
+    If c = 0 Then Return s 'no more hits
+    s = left(s, c - 1) + right(source, len(s) - c - len(remove) + 1)
+    If Not removeAllMatches Then Return s 'return after one hit otherwise we run until we get them all
+  Loop Until False
+End Function
