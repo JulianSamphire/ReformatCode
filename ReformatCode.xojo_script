@@ -570,7 +570,7 @@ Sub CleanBlock()
         allowNextSpace = True
         skipToken = True
         
-      Case TOKEN_TK_MOD, TOKEN_TK_AND, TOKEN_TK_OR, TOKEN_TK_XOR '264 277 278 345
+      Case TOKEN_TK_MOD, TOKEN_TK_AND, TOKEN_TK_OR, TOKEN_TK_XOR, TOKEN_TK_TO '264 277 278 345 283
         'Always put a space before these as they will end up merging if we don't
         s = s + " "
         allowNextSpace = True
