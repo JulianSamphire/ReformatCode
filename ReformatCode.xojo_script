@@ -664,6 +664,11 @@ Sub CleanBlock()
                   '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
                   'Drop the space if we follow the above so we can do a = 1 - -1
                   
+                Case TOKEN_TK_RETURN '290
+                  'Drop the space after a - that is following a Return so we can
+                  'Return -1
+                  'Return -a
+                  
                 Case Else
                   s = s + " "
                 End Select
