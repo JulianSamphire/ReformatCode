@@ -22,8 +22,10 @@ Dim RC_MessageQuoteMismatched As String
 
 Dim RC_MacroStorageLocation As String
 
+'Words to replace
 Dim RC_ReplaceList() As String = Array ("!", "Not", "endif", "End If", "endselect", "End Select", "endsub", "End Sub", "endfunction", "End Function", "endtry", "End Try")
 
+'Keywords to CaPiTaLiSe
 Dim RC_Words() As String = Array ( _
 "AddHandler", "AddressOf", "Aggregates", "Alias", "And", "Array", "As", "Assigns", "Attributes", "Auto", _
 "Boolean", "Break", "ByRef", "Byte", "ByVal", _
@@ -292,6 +294,7 @@ Sub InitWords()
   RC_Words.Concat(RC_Pragma_Directives)
   RC_Words.Concat(RC_Xojo_Core)
   
+  'Read in and process additional ReplaceWords, we'll add these to RC_ReplaceList
   Dim ReplaceWords As String
   ReadPreference("ReplaceWords", ReplaceWords, "")
   If ReplaceWords <> "" Then
@@ -378,7 +381,7 @@ Sub CleanBlock()
       Debug("TT=>" + TokenTextCurrent + "<=" + Str(TokenTypeCurrent) + " s=>" + s + "< pTT=" + Str(TokenTypeBackOne) + " ppTT=" + Str(TokenTypeBackTwo) + " aNS=" + If(allowNextSpace, "True", "False"), 1)
       
       'Keep track of the current tokenChain
-      If TokenTypeCurrent = TOKEN_IDENTIFIER Or TokenTypeCurrent = 46 Then
+      If TokenTypeCurrent = TOKEN_IDENTIFIER Or TokenTypeCurrent = 46 Or TokenTypeCurrent = TOKEN_TK_ME Or TokenTypeCurrent = TOKEN_TK_SELF Then '362 or . or Me or Self
         If tokenChainClear Then
           tokenChain = ""
           tokenChainClear = False
