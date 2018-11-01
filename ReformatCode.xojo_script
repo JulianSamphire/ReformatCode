@@ -380,18 +380,6 @@ Sub CleanBlock()
       
       Debug("TT=>" + TokenTextCurrent + "<=" + Str(TokenTypeCurrent) + " s=>" + s + "< pTT=" + Str(TokenTypeBackOne) + " ppTT=" + Str(TokenTypeBackTwo) + " aNS=" + If(allowNextSpace, "True", "False"), 1)
       
-      'Keep track of the current tokenChain
-      If TokenTypeCurrent = TOKEN_IDENTIFIER Or TokenTypeCurrent = 46 Or TokenTypeCurrent = TOKEN_TK_ME Or TokenTypeCurrent = TOKEN_TK_SELF Then '362 or . or Me or Self
-        If tokenChainClear Then
-          tokenChain = ""
-          tokenChainClear = False
-        End If
-        tokenChain = tokenChain + TokenTextCurrent
-        
-      Else
-        tokenChainEnded = True
-      End If
-      
       'Main select
       Select Case TokenTypeCurrent 
       Case 40 '(
@@ -498,6 +486,7 @@ Sub CleanBlock()
         '  *   +   -   /   <   =   >   \   ^   =             >=              <=              <>
         If ((TokenTypeCurrent = 43 And TokenTypeBackOne = 43) Or (TokenTypeCurrent = 45 And TokenTypeBackOne = 45)) And TokenTypeBackTwo = TOKEN_IDENTIFIER Then
           'handle a++ a--
+          Debug("Handle a++ tokenChain=" + tokenChain, 2)
           Dim pad As String = If(RC_PadOperators, " ", "")
           Dim start As String = Left(s, Len(s) - (Len(pad) + 1) - Len(tokenChain))
           s = start + tokenChain + pad + "=" + pad + tokenChain + pad + TokenTextCurrent + pad + "1"
@@ -505,6 +494,7 @@ Sub CleanBlock()
           
         ElseIf (TokenTypeCurrent = TOKEN_ASSIGN Or TokenTypeCurrent = 61) And (TokenTypeBackOne = 42 Or TokenTypeBackOne = 43 Or TokenTypeBackOne = 45 Or TokenTypeBackOne = 47) Then
           'handle a*=1 a+=1 a-=1 a/=1
+          Debug("Handle a+=1 tokenChain=" + tokenChain, 2)
           Dim pad As String = If(RC_PadOperators, " ", "")
           Dim start As String = Left(s, Len(s) - (Len(pad) + 1) - Len(tokenChain))
           s = start + tokenChain + pad + "=" + pad + tokenChain + pad + TokenTextBackOne
@@ -670,7 +660,6 @@ Sub CleanBlock()
                 Case TOKEN_TK_RETURN '290
                   'Drop the space after a - that is following a Return so we can
                   'Return -1
-                  'Return -a
                   
                 Case Else
                   s = s + " "
@@ -696,6 +685,10 @@ Sub CleanBlock()
                   '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
                   'Drop the space if we follow the above so we can do a = a - -a
                   
+                Case TOKEN_TK_RETURN '290
+                  'Drop the space after a - that is following a Return so we can
+                  'Return -a
+                  
                 Case Else
                   s = s + " "
                 End Select
@@ -710,12 +703,15 @@ Sub CleanBlock()
         allowNextSpace = True
       End Select
       
+      Debug("skipToken=" + If(skipToken, "True", "False"), 2)
+      
       If Not skipToken Then
         
         Dim found As Integer = RC_Words.IndexOf(TokenTextCurrent)
         
         If found > -1 Then
-          s = s + RC_Words(found)
+          TokenTextCurrent = RC_Words(found)
+          s = s + TokenTextCurrent
         Else
           'If there's something we dont know (like a variable) then we just insert it without modification
           
@@ -745,6 +741,18 @@ Sub CleanBlock()
         
       Else
         skipToken = False
+      End If
+      
+      'Keep track of the current tokenChain
+      If TokenTypeCurrent = TOKEN_IDENTIFIER Or TokenTypeCurrent = 46 Or TokenTypeCurrent = TOKEN_TK_ME Or TokenTypeCurrent = TOKEN_TK_SELF Then '362 or . or Me or Self
+        If tokenChainClear Then
+          tokenChain = ""
+          tokenChainClear = False
+        End If
+        tokenChain = tokenChain + TokenTextCurrent
+        
+      Else
+        tokenChainEnded = True
       End If
       
       If Left(tokenChain, Len(RC_MacroStorageLocation)) = RC_MacroStorageLocation Then
