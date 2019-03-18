@@ -220,4 +220,4 @@ You will still need to make sure that you correctly use ByRef before your parame
 
 If you have any questions, feature requests or bug reports, please visit to the Xojo forum [thread](https://forum.xojo.com/47389-xojo-ide-reformat-code-script) regarding this script.
 
-More information regarding Custom Code Reformatting in the Xojo IDE can be found [here](http://developer.xojo.com/custom-code-reformatting).
+More information regarding Custom Code Reformatting in the Xojo IDE can be found [here](https://docs.xojo.com/UserGuide:Custom_Code_Reformatting).
