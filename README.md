@@ -19,20 +19,21 @@ A reformat code script for the [Xojo IDE](https://www.xojo.com/) that has some u
 -   Macros, quickly insert pre-defined text with autocomplete description
 -   Automatic calculation of windows declare types
 -   Automatic conversion of hex types
--   Automatic conversion of defines to const
+-   Automatic conversion of #Define to Const
 -   Automatic conversion of MSDN code blocks to declares
 -   An error checking feature that will notify you if the line has:
     -   mismatched parentheses
     -   missing opening parenthesis
     -   missing closing parenthesis
     -   mismatched quotes
-    -   any of the above across line continuation
+    -   any of the above across line continuation when pasting a code chunk
 
 ## TL;DR - Where do I go for help?
 
 If you read through the following and need a little help, please:
 
 Watch the video - https://youtu.be/IAVjh-xiO0w
+**Latest features update video - https://youtu.be/-JPjQ4Gn1bM**
 
 Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
@@ -225,7 +226,7 @@ and it will be converted to:
 
 ### Hex conversion
 
-You can copy hex values from msdn pages or windows header files and paste them directly into Xojo with the reformat script handling the conversion so `0x0001` becomes `&h0001`
+You can copy hex values from msdn pages, windows header files or any location and paste them directly into Xojo with the reformat script handling the conversion so `0x0001` becomes `&h0001`. As long as the values are in the format 0x0 they will be converted.
 
 ### Conversion of #Define's to Const's
 
@@ -251,7 +252,7 @@ Because of the way that the IDE has implemented the reformat code scripting syst
 
 #### Method 1
 
-Click the Copy button in the top right corner of the code block on the MSDN page and paste this directly into Xojo. Unfortunately the way the reformat code system (not this script) has been implemented by the IDE it will mean that you will end up with something like this, which isn't correct:
+Click the Copy button in the top right corner of the code block on the MSDN page and paste this directly into Xojo. Unfortunately, the way the reformat code system (not this script) has been implemented by the IDE it will mean that you will end up with something like this, which isn't correct:
 
     LONG_PTR SetWindowLongPtrW('MISSING CLOSING PARENTHESIS
     HWND hWnd,
@@ -259,7 +260,7 @@ Click the Copy button in the top right corner of the code block on the MSDN page
     LONG_PTR dwNewLong
     );
 
-Pressing enter or moving off the last line will add an additional error comment to the last line. What you'll need to do is press Enter to make a new line, copy that entire block including the new line you just created then cut and paste it again to have this script process the block correctly (don't worry about removing the additional comments, the script will take care of those). When this works you'll see the following in the IDE:
+Pressing enter or moving off the last line will add an additional error comment to the last line. What you'll need to do is press Enter to make a new line, copy that entire block including the new line you just created then cut and paste it again to have this script process the block correctly (don't worry about removing the additional comments, the script will take care of those). When this works, you'll see the following in the IDE:
 
     Declare Function SetWindowLongPtrW Lib "REPLACE_ME.dll" Alias "SetWindowLongPtrW" ( _
       hWnd As Integer, _
@@ -277,7 +278,9 @@ Rather than clicking the Copy button, select from the start of the code snippet 
       dwNewLong As Integer _
       ) As Integer
 
-The alias is always added ready so you can change the name of the call before Lib to anything you need ensuring that the correct call is used withing the Alias quotes. To complete the process, double click REPLACE_ME and paste in the name of the dll from the bottom of the MSDN page under the section Requirements, DLL.
+The alias is always added ready so you can change the name of the call before Lib to anything you need ensuring that the correct call is used within the Alias quotes. To complete the process, double click REPLACE_ME and paste in the name of the dll from the bottom of the MSDN page under the section Requirements, DLL.
+
+**If this is all a bit confusing, just watch this [video](https://youtu.be/-JPjQ4Gn1bM) for a quick rundown of how to do it, once you get the hang of it, it makes working with declares a LOT quicker.**
 
 You will still need to make sure that you correctly use ByRef before your parameter names. See the notes at the top of my [blog](https://blog.samphire.net/2017/01/22/windows-to-xojo-data-type-conversion/) about this.
 
