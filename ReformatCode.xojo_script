@@ -1,3 +1,5 @@
+Dim RC_Version As String = "0.12"
+
 Dim RC_Prefix As String
 
 Dim RC_ConstStorageLocation As String
@@ -19,6 +21,7 @@ Dim RC_MessageParMismatched As String
 Dim RC_MessageParOpening As String
 Dim RC_MessageParClosing As String
 Dim RC_MessageQuoteMismatched As String
+Dim RC_MessageInCodeBlock As String
 
 Dim RC_MacroStorageLocation As String
 
@@ -284,6 +287,7 @@ Sub LoadPreferences()
   ReadPreference("MessageParOpening", RC_MessageParOpening, "MISSING OPENING PARENTHESIS")
   ReadPreference("MessageParClosing", RC_MessageParClosing, "MISSING CLOSING PARENTHESIS")
   ReadPreference("MessageQuoteMismatched", RC_MessageQuoteMismatched, "MISMATCHED QUOTES")
+  ReadPreference("MessageInCodeBlock", RC_MessageInCodeBlock, " IN CODE BLOCK")
   
   'Set the macro storage location
   ReadPreference("MacroStorageLocation", RC_MacroStorageLocation, "Macro")
@@ -324,16 +328,38 @@ Sub CleanBlock()
   buildMessage = buildMessage + If(RC_PadCommentBefore = "true" Or RC_PadCommentBefore = "yes" Or RC_PadCommentBefore = "1" Or RC_MessageComment = "rem", " ", "")
   buildMessage = buildMessage + RC_MessageComment
   buildMessage = buildMessage + If(RC_PadCommentAfter = "true" Or RC_PadCommentAfter = "yes" Or RC_PadCommentAfter = "1" Or RC_MessageComment = "rem", " ", "")
+  
   Dim expandedMessageParMismatched As String = If(RC_MessageParMismatched <> "", buildMessage + RC_MessageParMismatched, "")
   Dim expandedMessageParOpening As String = If(RC_MessageParOpening <> "", buildMessage + RC_MessageParOpening, "")
   Dim expandedRC_MessageParClosing As String = If(RC_MessageParClosing <> "", buildMessage + RC_MessageParClosing, "")
   Dim expandedMessageQuoteMismatched As String = If(RC_MessageQuoteMismatched <> "", buildMessage + RC_MessageQuoteMismatched, "")
+  Dim expandedMessageInCodeBlock As String = If(RC_MessageInCodeBlock <> "", RC_MessageInCodeBlock, "")
+  
   Debug("expandedMessageParMismatched=|" + expandedMessageParMismatched + "|", 2)
   Debug("expandedMessageParOpening=|" + expandedMessageParOpening + "|", 2)
   Debug("expandedRC_MessageParClosing=|" + expandedRC_MessageParClosing + "|", 2)
   Debug("expandedMessageQuoteMismatched=|" + expandedMessageQuoteMismatched + "|", 2)
+  Debug("expandedMessageInCodeBlock=|" + expandedMessageInCodeBlock + "|", 2)
   
-  Debug("Starting CleanBlock", 1)
+  Debug("Starting CleanBlock v" + RC_Version, 1)
+  
+  Dim inContinuation As Boolean = False
+  Dim wasInContinuation As Boolean = False
+  'Parenthesis count across lines in the whole block
+  Dim parCountBlock As Integer = 0
+  Dim parMismatchBlock As Boolean = False
+  
+  Dim isInMSDNCodeBlock As Boolean = False
+  
+  Dim MSDN_Return As String = ""
+  Dim MSDN_Call As String = ""
+  
+  If LineCount > 0 Then
+    If Line(LineCount - 1) = ");" Then
+      Debug("#~#~# INSIDE MSDN #~#~#", 2)
+      isInMSDNCodeBlock = True
+    End If
+  End If
   
   For currentLineNumber As Integer = 0 To LineCount - 1
     Debug("Line=|" + Line(currentLineNumber) + "|", 1)
@@ -362,6 +388,9 @@ Sub CleanBlock()
     'If we find a ) before a ( then set this to true
     Dim parMismatch As Boolean = False
     
+    Dim MSDN_Type As String = ""
+    Dim MSDN_Var As String = ""
+    
     While NextToken = True
       
       Dim TokenTypeCurrent As Integer = TokenType
@@ -381,75 +410,93 @@ Sub CleanBlock()
       Debug("TT=>" + TokenTextCurrent + "<=" + Str(TokenTypeCurrent) + " s=>" + s + "< pTT=" + Str(TokenTypeBackOne) + " ppTT=" + Str(TokenTypeBackTwo) + " aNS=" + If(allowNextSpace, "True", "False"), 1)
       
       'Main select
-      Select Case TokenTypeCurrent 
+      Select Case TokenTypeCurrent
+      Case 38 '&
+        'Change & to + for users of other languages
+        s = s + If(RC_PadOperators, " +", "+")
+        allowNextSpace = RC_PadOperators
+        skipToken = True
+        
       Case 40 '(
-        parCount = parCount + 1
-        If RC_PadParOutside Then
-          If TokenTypeBackOne = 45 Then '-
-            'allow us to put the pad before the - so we end up with = -( not =- (
-            If Mid(s, Len(s) - 1, 1) <> " " Then
-              'check that we haven't already got a space before the - if not then put one in
-              s = Left(s, Len(s) - 1) + " " + Right(s, 1)
-            End If
-            
-          Else
-            If TokenTypeBackOne = TOKEN_TK_IF And TokenTypeBackTwo > 0 Then
-              'we are processing the ( of an IIf
-              If RC_PadIIf Then
-                'allow space removal between inline if and the following (
-                s = s + " "
+        If isInMSDNCodeBlock And MSDN_Return <> "" And MSDN_Call <> "" And MSDN_Type = "" And MSDN_Var = "" Then
+          'We're at the end of the first line so we can build the declare
+          s = s + "Declare " + If(MSDN_Return = "void", "Sub", "Function") + " " + MSDN_Call + " Lib ""REPLACE_ME.dll"" Alias """ + MSDN_Call + """ ( _"
+          parCount = parCount + 1
+          inContinuation = True
+          allowNextSpace = False
+          skipToken = True
+          
+        Else
+          parCount = parCount + 1
+          If RC_PadParOutside Then
+            If TokenTypeBackOne = 45 Then '-
+              'allow us to put the pad before the - so we end up with = -( not =- (
+              If Mid(s, Len(s) - 1, 1) <> " " Then
+                'check that we haven't already got a space before the - if not then put one in
+                s = Left(s, Len(s) - 1) + " " + Right(s, 1)
               End If
               
             Else
+              If TokenTypeBackOne = TOKEN_TK_IF And TokenTypeBackTwo > 0 Then
+                'we are processing the ( of an IIf
+                If RC_PadIIf Then
+                  'allow space removal between inline if and the following (
+                  s = s + " "
+                End If
+                
+              Else
+                s = s + " "
+              End If
+            End If
+            
+          Else
+            If (TokenTypeBackOne = TOKEN_ASSIGN Or TokenTypeBackOne = 61) And RC_PadOperators Then '=
+              '= ( if we are not padding ( but we are padding operators we pad = to keep things looking nice
+              s = s + " "
+              
+            ElseIf TokenTypeBackOne = TOKEN_STRING Then
+              'put a space between " and ( in a declare
+              s = s + " "
+              
+            ElseIf TokenTypeBackOne = TOKEN_TK_STEP Then
+              'put a space between step and (
+              s = s + " "
+              
+            ElseIf TokenTypeBackOne = 45 And RC_PadOperators Then '-
+              Select Case TokenTypeBackTwo
+              Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_IF
+                '  *   +   -   /   <   =   >   \   ^   =             >=              <=              <>              IF
+                'put no space between - ( in ) >= -(
+                'nor between - and ( in if -(
+              Else
+                'put a space between - and ( if we are RC_PadOperators and not RC_PadParOutside but not if we follow an = so we can do = -(
+                s = s + " "
+              End Select
+              
+            ElseIf TokenTypeBackOne = TOKEN_IDENTIFIER Then
+              'don't put a space between a( if not RC_PadParOutside
+              
+            ElseIf TokenTypeBackOne = TOKEN_TK_CTYPE Then
+              'don't put a space between ctype and ( if not RC_PadParOutside
+              
+            ElseIf TokenTypeBackOne = TOKEN_TK_IF And TokenTypeBackTwo > 0 Then
+              'allow space removal between inline if and the following (
+              If RC_PadIIf Then
+                s = s + " "
+              End If
+              
+            ElseIf allowNextSpace = True Then
               s = s + " "
             End If
           End If
-          
-        Else
-          If (TokenTypeBackOne = TOKEN_ASSIGN Or TokenTypeBackOne = 61) And RC_PadOperators Then '=
-            '= ( if we are not padding ( but we are padding operators we pad = to keep things looking nice
-            s = s + " "
-            
-          ElseIf TokenTypeBackOne = TOKEN_STRING Then
-            'put a space between " and ( in a declare
-            s = s + " "
-            
-          ElseIf TokenTypeBackOne = TOKEN_TK_STEP Then
-            'put a space between step and (
-            s = s + " "
-            
-          ElseIf TokenTypeBackOne = 45 And RC_PadOperators Then '-
-            Select Case TokenTypeBackTwo
-            Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_IF
-              '  *   +   -   /   <   =   >   \   ^   =             >=              <=              <>              IF
-              'put no space between - ( in ) >= -(
-              'nor between - and ( in if -(
-            Else
-              'put a space between - and ( if we are RC_PadOperators and not RC_PadParOutside but not if we follow an = so we can do = -(
-              s = s + " "
-            End Select
-            
-          ElseIf TokenTypeBackOne = TOKEN_IDENTIFIER Then
-            'don't put a space between a( if not RC_PadParOutside
-            
-          ElseIf TokenTypeBackOne = TOKEN_TK_CTYPE Then
-            'don't put a space between ctype and ( if not RC_PadParOutside
-            
-          ElseIf TokenTypeBackOne = TOKEN_TK_IF And TokenTypeBackTwo > 0 Then
-            'allow space removal between inline if and the following (
-            If RC_PadIIf Then
-              s = s + " "
-            End If
-            
-          ElseIf allowNextSpace = True Then
-            s = s + " "
-          End If
+          allowNextSpace = RC_PadParInside
         End If
-        allowNextSpace = RC_PadParInside
+        
         
       Case 41 ')
         parCount = parCount - 1
         If parCount < 0 Then parMismatch = True
+        If parCountBlock < 0 Then parMismatchBlock = True
         If TokenTypeBackOne = 40 Then
           '()
           If RC_RemoveEmptyPar Then
@@ -477,7 +524,15 @@ Sub CleanBlock()
         End If
         
       Case 44 ',
-        allowNextSpace = RC_PadComma
+        If isInMSDNCodeBlock Then
+          'Replace the , with a _ at the end of the msdn code block line
+          s = s + ", _"
+          inContinuation = True
+          allowNextSpace = False
+          skipToken = True
+        Else
+          allowNextSpace = RC_PadComma
+        End If
         
       Case 46 '.
         allowNextSpace = False
@@ -540,6 +595,9 @@ Sub CleanBlock()
             ElseIf TokenTypeBackOne = TOKEN_TK_IF Then
               'Always put a space between if - even if RC_PadOperators is false
               s = s + " "
+            ElseIf TokenTypeBackOne = TOKEN_TK_RETURN Then
+              'Allow Return -1 and Return -a even if RC_PadOperators is false
+              s = s + " "
             End If
             
             allowNextSpace = False
@@ -550,6 +608,23 @@ Sub CleanBlock()
         s = s + If(RC_PadOperators, " :", ":")
         allowNextSpace = RC_PadOperators
         skipToken = True
+        
+      Case 59 ';
+        If isInMSDNCodeBlock And TokenTypeBackOne = 41 Then
+          'Remove the ; from the end of the msdn code block and add the return
+          If MSDN_Return <> "void" Then
+            s = s + " As "
+            'Inject the token so it can be handled by the conversion routine later on
+            TokenTextCurrent = "w_" + MSDN_Return
+            skipToken = False
+            
+          Else
+            skipToken = True
+          End If
+          
+        Else
+          skipToken = False
+        End If
         
       Case TOKEN_TK_AS '262
         'Always put a space before an As no matter if it follows a ) like in a Declare
@@ -569,7 +644,7 @@ Sub CleanBlock()
         allowNextSpace = True
         
       Case TOKEN_TK_STEP '297
-        'Always out a space before a Step, it looks funny if we don't
+        'Always put a space before a Step, it looks funny if we don't
         s = s + " "
         allowNextSpace = True
         
@@ -577,6 +652,83 @@ Sub CleanBlock()
         'Always put a space before an IsA no matter if it follows a ) with RC_PadPasOutside false
         s = s + " "
         allowNextSpace = True
+        
+      Case TOKEN_IDENTIFIER '362
+        'Convert #define ABC 0x0001 To Const ABC = &h0001
+        If TokenTypeBackOne = 35 And TokenTextBackOne = "#define" Then
+          s = Left(s, Len(s) - 7) + "Const " + TokenText + If(RC_PadOperators, " =", "=")
+          allowNextSpace = RC_PadOperators
+          skipToken = True
+          
+        ElseIf Left(TokenTextCurrent, 1) = "x" And TokenTypeBackOne = TOKEN_NUMBER And TokenTextBackOne = "0" Then
+          'Convert hex formats from 0x0001 to &h0001
+          s = Left(s, Len(s) - 1) + "&h" + Right(TokenTextCurrent, Len(TokenTextCurrent) - 1)
+          skipToken = True
+          
+        ElseIf TokenTypeBackOne = 45 Then '-
+          If RC_PadOperators Then
+            Select Case TokenTypeBackTwo                         
+            Case TOKEN_TK_IF '258
+              If TokenTypeBackOne = 45 Then '-
+                'if -a
+                'Drop the space
+              Else
+                s = s + " "
+              End If
+              
+            Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_NOT
+              '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
+              'Drop the space if we follow the above so we can do a = a - -a
+              
+            Case TOKEN_TK_RETURN '290
+              'Drop the space after a - that is following a Return so we can
+              'Return -a
+              
+            Case Else
+              If allowNextSpace Then
+                s = s + " "
+              End If
+            End Select
+          Else
+            If allowNextSpace Then
+              s = s + " "
+            End If
+          End If
+          
+        Else
+          If isInMSDNCodeBlock = True Then
+            'Tokens found inside an MSDN block
+            If MSDN_Return = "" Then
+              MSDN_Return = TokenTextCurrent
+              skipToken = True
+              
+            ElseIf MSDN_Call = "" Then
+              MSDN_Call = TokenTextCurrent
+              skipToken = True
+              
+            ElseIf MSDN_Type = "" Then
+              MSDN_Type = TokenTextCurrent
+              Debug("MSDN_Type=>" + MSDN_Type, 2)
+              skipToken = True
+              
+            ElseIf MSDN_Var = "" Then
+              MSDN_Var = TokenTextCurrent
+              Debug("MSDN_Var=>" + MSDN_Type, 2)
+              s = s + MSDN_Var + " As "
+              'Inject the token so it can be handled by the conversion routine later on
+              TokenTextCurrent = "w_" + MSDN_Type
+              inContinuation = True
+              skipToken = False
+            End If
+            
+          Else
+            'All generic tokens pass through here
+            If allowNextSpace Then
+              s = s + " "
+            End If
+          End If
+          
+        End If
         
       Case TOKEN_STRING '364
         If allowNextSpace Then
@@ -620,10 +772,12 @@ Sub CleanBlock()
         Continue For
         
       Case TOKEN_LINE_CONTINUATION '375
+        inContinuation = True
         s = s + If(RC_PadLineContinuation, " _", "_")
         skipToken = True
         
       Case Else
+        Debug("Inside last Else ********", 2)
         If allowNextSpace Then
           If TokenTypeBackOne = 45 And TokenTypeBackTwo = TOKEN_TK_STEP Then '-
             'Leave out the space between - and 1 after a Step
@@ -638,11 +792,11 @@ Sub CleanBlock()
               s = s + " "
               
             ElseIf TokenTypeBackTwo = TOKEN_IDENTIFIER Then
-              'change a -1 to a - 1 or a -1 to a - 1.0
+              'change a -1 to a - 1 or a -1.0 to a - 1.0
               s = s + " "
               
             Else
-              Debug("Inside last numeric fallback", 2)
+              Debug("Inside last negative numeric fallback ********", 2)
               If RC_PadOperators Then
                 Select Case TokenTypeBackTwo
                 Case TOKEN_TK_IF, 44 ',
@@ -669,35 +823,11 @@ Sub CleanBlock()
               
             End If
           Else
-            Debug("Inside last generic fallback", 2)
-            If TokenTypeBackOne = 45 Then '-
-              If RC_PadOperators Then
-                Select Case TokenTypeBackTwo                         
-                Case TOKEN_TK_IF
-                  If TokenTypeBackOne = 45 Then '-
-                    'if -a
-                    'Drop the space
-                  Else
-                    s = s + " "
-                  End If
-                  
-                Case 42, 43, 45, 47, 60, 61, 62, 92, 94, TOKEN_ASSIGN, TOKEN_GE_RELOP, TOKEN_LE_RELOP, TOKEN_NE_RELOP, TOKEN_TK_NOT
-                  '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
-                  'Drop the space if we follow the above so we can do a = a - -a
-                  
-                Case TOKEN_TK_RETURN '290
-                  'Drop the space after a - that is following a Return so we can
-                  'Return -a
-                  
-                Case Else
-                  s = s + " "
-                End Select
-              Else
-                s = s + " "
-              End If
-            Else
+            Debug("Inside last generic fallback ########", 2)
+            If allowNextSpace Then
               s = s + " "
             End If
+            
           End If
         End If
         allowNextSpace = True
@@ -706,6 +836,8 @@ Sub CleanBlock()
       Debug("skipToken=" + If(skipToken, "True", "False"), 2)
       
       If Not skipToken Then
+        
+        Debug("insideSkipToken s=>" + s + "<", 2)
         
         Dim found As Integer = RC_Words.IndexOf(TokenTextCurrent)
         
@@ -774,15 +906,28 @@ Sub CleanBlock()
       
     Wend
     
+    If isInMSDNCodeBlock And s = "" Then
+      'Handle empty lines in msdn code blocks, usually because the call has no parameters
+      s = s + "_"
+      inContinuation = True
+    End If
+    
+    If isInMSDNCodeBlock And MSDN_Type <> "" And Right(s, 2) <> " _" Then
+      'Add the _ on the last line before the ) of the msdn code block
+      s = s + " _"
+      inContinuation = True
+    End If
+    
     'Remove any error messages that exist at the end of the line
     Dim rl As String = RemainingLine()
     rl = rl.RemoveString(expandedMessageParMismatched)
     rl = rl.RemoveString(expandedMessageParOpening)
     rl = rl.RemoveString(expandedRC_MessageParClosing)
     rl = rl.RemoveString(expandedMessageQuoteMismatched)
+    rl = rl.RemoveString(expandedMessageInCodeBlock)
     
     'Check for out of order )( or missing ()
-    If (parCount < 0 And RC_MessageParOpening <> "") Or (parCount > 0 And RC_MessageParClosing <> "") Or (parMismatch And RC_MessageParMismatched <> "" And parCount = 0) Then
+    If ((parCount < 0 And RC_MessageParOpening <> "") Or (parCount > 0 And RC_MessageParClosing <> "") Or (parMismatch And RC_MessageParMismatched <> "" And parCount = 0)) And Not inContinuation And Not wasInContinuation Then
       Debug("MISMATCH", 1)
       Debug("parCount=" + str(parCount), 2)
       Debug("parMismatch=" + If(parMismatch, "True", "False"), 2)
@@ -801,6 +946,27 @@ Sub CleanBlock()
     'Add any left over characters to the line, like after a comment
     RenderRemainingLine(rl, s)
     
+    Debug("***BEFORE inContinuation=" + If(inContinuation, "True", "False") + " wasInContinuation=" + If(wasInContinuation, "True", "False"), 1)
+    
+    If inContinuation Or wasInContinuation Then
+      parCountBlock = parCountBlock + parCount
+      Debug("parCountBlock=" + str(parCountBlock), 2)
+      Debug("parMismatchBlock=" + str(parCountBlock), 2)
+      
+      If Not inContinuation And wasInContinuation Then
+        'Just left a continuation so we can finish up
+        If parCountBlock > 0 Then
+          s = s + expandedRC_MessageParClosing + RC_MessageInCodeBlock
+        ElseIf parCountBlock < 0 Then
+          s = s + expandedMessageParOpening + RC_MessageInCodeBlock
+        ElseIf (parCountBlock = 0 And parMismatchBlock) Then
+          s = s + expandedMessageParMismatched + RC_MessageInCodeBlock
+        End If
+        
+      End If
+      
+    End If
+    
     'strip off the leading space, doing it this way keeps the code cleaner as we dont have to put it all in a huge if
     If Left(s, 1) = " " Then
       s = Right(s, Len(s) - 1)
@@ -810,6 +976,15 @@ Sub CleanBlock()
     
     'Put the line that we've built into the IDE
     Line(currentLineNumber) = s
+    
+    If inContinuation Then
+      wasInContinuation = True 'remember that the last line was a continuation
+      inContinuation = False 'reset this for the next loop around
+    Else
+      wasInContinuation = False 'if the current line didnt have a continuation then we remember that for the next line
+    End If
+    
+    Debug("***AFTER inContinuation=" + If(inContinuation, "True", "False") + " wasInContinuation=" + If(wasInContinuation, "True", "False"), 1)
     
   Next
 End Sub
@@ -844,7 +1019,7 @@ End Sub
 
 'ReadPreference for Boolean
 Sub ReadPreference(name As String, ByRef value As Boolean, Optional defaultValue As Boolean = False)
-  Select Case ConstantValue(RC_ConstStorageLocation + RC_Prefix + RC_Prefix + name)
+  Select Case ConstantValue(RC_ConstStorageLocation + RC_Prefix + name)
   Case "1", "Yes", "True"
     Debug("ReadPreference " + RC_ConstStorageLocation + RC_Prefix + name + "=True", 1)
     value = True
