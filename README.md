@@ -18,11 +18,15 @@ A reformat code script for the [Xojo IDE](https://www.xojo.com/) that has some u
 -   Code replacement, `a++`, `a+=1`, `if a!=1` etc.
 -   Macros, quickly insert pre-defined text with autocomplete description
 -   Automatic calculation of windows declare types
+-   Automatic conversion of hex types
+-   Automatic conversion of defines to const
+-   Automatic conversion of MSDN code blocks to declares
 -   An error checking feature that will notify you if the line has:
     -   mismatched parentheses
     -   missing opening parenthesis
     -   missing closing parenthesis
     -   mismatched quotes
+    -   any of the above across line continuation
 
 ## TL;DR - Where do I go for help?
 
@@ -132,12 +136,11 @@ If you set this value to true it will try to place a space after the comment tok
 
 ### Error Checking
 
-The error message will automatically be removed when you move off the line if the error is corrected without altering the format or spacing of the error message.
+The error message will automatically be removed when you move off the line if the error is corrected without altering the format or spacing of the error message. Error checking can now take place over lines that are split with continuation marks `_` if the block is pasted in with a spare blank line at the end.
 
     MessageComment (')
 
 This is the comment type used for error message notifications. This setting can either be `'`, `//` or `Rem`.
-
 
     MessageParMismatched (MISMATCHED PARENTHESES)
 
@@ -155,6 +158,10 @@ This is the message that is shown to notify you if there is a missing closing pa
 
 This is the message that is shown to notify you if there are mismatched quotes on the line. Setting this to `_` (underscore) will turn off checks for this setting and the error message will not be shown.
 
+    MessageInCodeBlock ( IN CODE BLOCK)
+
+This message is added to the end of one of the messages shown above when there is an issue inside a recently pasted code block that uses line continuation marks `_`.
+
 ### Debugging
 
     DebugLevel (0)
@@ -166,21 +173,21 @@ Reports debug information (see `System.DebugLog` for more information). This set
 
 There are a set of replacements that happen when moving onto a new line which aid with coding:
 
-    a+=1	a=a+1
-    a-=1	a=a-1
-    a*=1	a=a*1
-    a/=1	a=a/1
-    a++	a=a+1
-    a--	a=a-1
+    a+=1    a=a+1
+    a-=1    a=a-1
+    a*=1    a=a*1
+    a/=1    a=a/1
+    a++     a=a+1
+    a--     a=a-1
 
 The above section also works with dot notation e.g.:
 
-    window1.title+="hello"	window1.title=window1.title+"hello"
+    window1.title+="hello"    window1.title=window1.title+"hello"
 
 If you have come from other languages it will also help you with:
 
-    If a not = 1	if a <> 1
-    If a != 1	if a <> 1
+    If a not = 1    if a <> 1
+    If a != 1       if a <> 1
     
 ## Macros
 ([Jump to to this point in the video](https://youtu.be/IAVjh-xiO0w?t=14m44s))
@@ -215,6 +222,62 @@ For example, to add SetWindowLong type the following:
 and it will be converted to:
 
     Declare Function SetWindowLong Lib "User32" Alias "SetWindowLongW" (hWnd As Integer, nIndex As Int32, dwNewLong As Int32) As Int32
+
+### Hex conversion
+
+You can copy hex values from msdn pages or windows header files and paste them directly into Xojo with the reformat script handling the conversion so `0x0001` becomes `&h0001`
+
+### Conversion of #Define's to Const's
+
+The ReformatCode script will convert from #Define's that you find in windows header files or on MSDN into the correct Const syntax in Xojo, for example:
+
+    #define WM_QUIT                         0x0012
+
+will be converted to:
+
+    Const WM_QUIT = &h0012
+
+### Conversion of MSDN code blocks
+
+If you are a regular user of windows declares you'll be familiar with MSDN and the code samples they provide. For example if you visit [SetWindowLongPtrW On MSDN](https://docs.microsoft.com/en-us/windows/desktop/api/winuser/nf-winuser-setwindowlongptrw) and see the section labled Syntax you will see the following piece of code:
+
+    LONG_PTR SetWindowLongPtrW(
+      HWND     hWnd,
+      int      nIndex,
+      LONG_PTR dwNewLong
+    );
+
+Because of the way that the IDE has implemented the reformat code scripting system there are two ways to get this into Xojo. The first requires an additional step and the second is quicker but requires a more accurate copy process.
+
+#### Method 1
+
+Click the Copy button in the top right corner of the code block on the MSDN page and paste this directly into Xojo. Unfortunately the way the reformat code system (not this script) has been implemented by the IDE it will mean that you will end up with something like this, which isn't correct:
+
+    LONG_PTR SetWindowLongPtrW('MISSING CLOSING PARENTHESIS
+    HWND hWnd,
+    int nIndex,
+    LONG_PTR dwNewLong
+    );
+
+Pressing enter or moving off the last line will add an additional error comment to the last line. What you'll need to do is press Enter to make a new line, copy that entire block including the new line you just created then cut and paste it again to have this script process the block correctly (don't worry about removing the additional comments, the script will take care of those). When this works you'll see the following in the IDE:
+
+    Declare Function SetWindowLongPtrW Lib "REPLACE_ME.dll" Alias "SetWindowLongPtrW" ( _
+      hWnd As Integer, _
+      nIndex As Int32, _
+      dwNewLong As Integer _
+      ) As Integer
+
+#### Method 2 (my preferred method)
+
+Rather than clicking the Copy button, select from the start of the code snippet (just before LONG_PRT in this case) all the way down to just before the P of parameters. This will include an additional blank line that will mean our paste into the IDE will work first time, so switch to the IDE and paste the code and you will see the following in the IDE:
+
+    Declare Function SetWindowLongPtrW Lib "REPLACE_ME.dll" Alias "SetWindowLongPtrW" ( _
+      hWnd As Integer, _
+      nIndex As Int32, _
+      dwNewLong As Integer _
+      ) As Integer
+
+The alias is always added ready so you can change the name of the call before Lib to anything you need ensuring that the correct call is used withing the Alias quotes. To complete the process, double click REPLACE_ME and paste in the name of the dll from the bottom of the MSDN page under the section Requirements, DLL.
 
 You will still need to make sure that you correctly use ByRef before your parameter names. See the notes at the top of my [blog](https://blog.samphire.net/2017/01/22/windows-to-xojo-data-type-conversion/) about this.
 
