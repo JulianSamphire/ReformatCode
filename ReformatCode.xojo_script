@@ -342,6 +342,13 @@ Sub CleanBlock()
   Debug("expandedMessageInCodeBlock=|" + expandedMessageInCodeBlock + "|", 2)
   
   Debug("Starting CleanBlock v" + RC_Version, 1)
+  Debug("Lines detected=" + str(LineCount), 2)
+  
+  Dim currentLineNumber As Integer
+  
+  For currentLineNumber = 0 To LineCount - 1
+    Debug("LINE=>" + Line(currentLineNumber) + "<", 2)
+  Next
   
   Dim inContinuation As Boolean = False
   Dim wasInContinuation As Boolean = False
@@ -361,7 +368,7 @@ Sub CleanBlock()
     End If
   End If
   
-  For currentLineNumber As Integer = 0 To LineCount - 1
+  For currentLineNumber = 0 To LineCount - 1
     Debug("Line=|" + Line(currentLineNumber) + "|", 1)
     
     Dim s As String = ""
@@ -654,7 +661,7 @@ Sub CleanBlock()
         allowNextSpace = True
         
       Case TOKEN_IDENTIFIER '362
-        'Convert #define ABC 0x0001 To Const ABC = &h0001
+        'Part of the conversion of #define ABC 0x0001 To Const ABC = &h0001
         If TokenTypeBackOne = 35 And TokenTextBackOne = "#define" Then
           s = Left(s, Len(s) - 7) + "Const " + TokenText + If(RC_PadOperators, " =", "=")
           allowNextSpace = RC_PadOperators
@@ -662,6 +669,10 @@ Sub CleanBlock()
           
         ElseIf Left(TokenTextCurrent, 1) = "x" And TokenTypeBackOne = TOKEN_NUMBER And TokenTextBackOne = "0" Then
           'Convert hex formats from 0x0001 to &h0001
+          If Right(TokenTextCurrent, 1) = "L" Then
+            'Remove the L from the end of the hex value denoting a LONG const, this doesn't matter in Xojo
+            TokenTextCurrent = Left(TokenTextCurrent, Len(TokenTextCurrent) - 1)
+          End If
           s = Left(s, Len(s) - 1) + "&h" + Right(TokenTextCurrent, Len(TokenTextCurrent) - 1)
           skipToken = True
           
@@ -723,9 +734,11 @@ Sub CleanBlock()
             
           Else
             'All generic tokens pass through here
+            Debug("Inside generic token fallback ********", 2)
             If allowNextSpace Then
               s = s + " "
             End If
+            allowNextSpace = True
           End If
           
         End If
@@ -837,7 +850,7 @@ Sub CleanBlock()
       
       If Not skipToken Then
         
-        Debug("insideSkipToken s=>" + s + "<", 2)
+        Debug("inside Not SkipToken s=>" + s + "<", 2)
         
         Dim found As Integer = RC_Words.IndexOf(TokenTextCurrent)
         
@@ -975,7 +988,10 @@ Sub CleanBlock()
     Debug("RENDERING LINE=|" + s + "|", 1)
     
     'Put the line that we've built into the IDE
-    Line(currentLineNumber) = s
+    If s <> "" Then
+      'We have to put this in an If as there is as a silent exception raised if we don't that we can't recover from <feedback://showreport?report_id=55859>
+      Line(currentLineNumber) = s
+    End If
     
     If inContinuation Then
       wasInContinuation = True 'remember that the last line was a continuation
