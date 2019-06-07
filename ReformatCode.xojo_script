@@ -1,4 +1,4 @@
-Dim RC_Version As String = "0.12"
+Dim RC_Version As String = "0.14"
 
 Dim RC_Prefix As String
 
@@ -733,12 +733,18 @@ Sub CleanBlock()
             End If
             
           Else
-            'All generic tokens pass through here
-            Debug("Inside generic token fallback ********", 2)
-            If allowNextSpace Then
-              s = s + " "
+            If TokenTextCurrent = "reformat_code_script_version" Then
+              s = s + "Reformat Code Script Version v" + RC_Version
+              skipToken = True
+            Else
+              'All generic tokens pass through here
+              Debug("Inside generic token fallback ********", 2)
+              If allowNextSpace Then
+                s = s + " "
+              End If
+              allowNextSpace = True  
             End If
-            allowNextSpace = True
+            
           End If
           
         End If
