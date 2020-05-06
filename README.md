@@ -27,6 +27,9 @@ A reformat code script for the [Xojo IDE](https://www.xojo.com/) that has some u
     -   missing closing parenthesis
     -   mismatched quotes
     -   any of the above across line continuation when pasting a code chunk
+-   Automatic conversion of Dim to Var and Var to Dim as desired
+-   Automatic conversion of Var back to Dim if you're using a pre 2019r2 edition of the IDE
+-   Force case to UPPERCASE, lowercase or Xojo default on anything except variables
 
 ## TL;DR - Where do I go for help?
 
@@ -34,7 +37,7 @@ If you read through the following and need a little help, please:
 
 Watch the video - https://youtu.be/IAVjh-xiO0w
 
-**Latest features update video - https://youtu.be/-JPjQ4Gn1bM**
+Latest features update video - https://youtu.be/-JPjQ4Gn1bM
 
 Ask questions on the forum - https://forum.xojo.com/47389-xojo-ide-reformat-code-script
 
@@ -78,6 +81,14 @@ If the prefix is set to Me then settings are read locally so you can change sett
     Prefix (<empty>)
 
 If the setting is set, the prefix for all future settings will be based on that value, so setting it to `Test_` will change all settings in that project to require a `Test_` prefix. You can use this if you want to avoid naming conflicts in your projects.
+
+    DimVar (<empty>)
+
+If you set this value to `Var` it will automatically change `Dim` to `Var`. If you set this value to `Dim` it will automatically change `Var` to `Dim`. If you leave it blank it will not change Dim or Var. The script will also automatically convert Var to Dim if you’re using an API1 edition of Xojo (pre 2019r2).
+
+    ForceCase (<empty>)
+
+If you set this value to `Uppercase` it will force everything except variables to UPPERCASE so `Dim a As String` will become `DIM a AS STRING`. If you set this value to `Lowercase` it will force everything except variables to lowercase so `Dim a As String` will become `dim a as string`. If you leave this value blank it will use the standard formatting defined in the script e.g. `Dim a As String`.
 
     PadParInside (false)
 

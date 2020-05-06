@@ -1,36 +1,50 @@
-Dim RC_Version As String = "0.14"
+Dim RC_Version As String = "0.17" 'Type rc_version to see this at runtime
+Dim RC_DebugLevel As Integer' = 2 'Uncomment this if you want to debug preferences before RC_DebugLevel is set (see LoadPreferences)
 
-Dim RC_Prefix As String
-
-Dim RC_ConstStorageLocation As String
-
-Dim RC_DebugLevel As Integer '= 2 'Uncomment this if you want to debug preferences before RC_DebugLevel is set (see LoadPreferences)
-Dim RC_PadParInside As Boolean
-Dim RC_PadParOutside As Boolean
-Dim RC_PadEmptyParInside As Boolean
-Dim RC_RemoveEmptyPar As Boolean
-Dim RC_PadComma As Boolean
-Dim RC_PadOperators As Boolean
-Dim RC_PadIIf As Boolean
-Dim RC_PadLineContinuation As Boolean
-Dim RC_Comment As String
-Dim RC_PadCommentBefore As String 'We use a string here instead of a boolean because this is a tristate variable
-Dim RC_PadCommentAfter As String 'We use a string here instead of a boolean because this is a tristate variable
-Dim RC_MessageComment As String
-Dim RC_MessageParMismatched As String
-Dim RC_MessageParOpening As String
-Dim RC_MessageParClosing As String
-Dim RC_MessageQuoteMismatched As String
-Dim RC_MessageInCodeBlock As String
-
-Dim RC_MacroStorageLocation As String
+'Set up script preferences
+Sub LoadPreferences()
+  'You can alter the defaults of this script by changing the value of the last parameter of ReadPreference below
+  'However its best to do this in your project as an updated script will reset your changes
+  
+  'Set the default storage location for constants, we read this in first so they can be moved
+  'We always read this in from App.ConstantStorageLocation (you can change the default below)
+  ReadPreference_ConstStorageLocation("ConstantStorageLocation", RC_ConstStorageLocation, "App.")
+  
+  'Set the prefix for all constant names
+  ReadPreference("Prefix", RC_Prefix, "")
+  
+  'Set the constant defaults - you can changes these in the IDE if you want, see docs
+  ReadPreference("DebugLevel", RC_DebugLevel, 0)
+  ReadPreference("ForceCase", RC_ForceCase, "") 'uppercase lowercase <empty>
+  ReadPreference("DimVar", RC_DimVar, "") 'dim var <empty>
+  ReadPreference("PadParInside", RC_PadParInside, False)
+  ReadPreference("PadParOutside", RC_PadParOutside, False)
+  ReadPreference("PadEmptyParInside", RC_PadEmptyParInside, False)
+  ReadPreference("RemoveEmptyPar", RC_RemoveEmptyPar, False)
+  ReadPreference("PadComma", RC_PadComma, True)
+  ReadPreference("PadOperators", RC_PadOperators, True)
+  ReadPreference("PadIIf", RC_PadIIf, False)
+  ReadPreference("PadLineContinuation", RC_PadLineContinuation, True)
+  ReadPreference("Comment", RC_Comment, "") '// ' rem
+  ReadPreference("PadCommentBefore", RC_PadCommentBefore, "") 'true false <empty>
+  ReadPreference("PadCommentAfter", RC_PadCommentAfter, "") 'true false <empty>
+  ReadPreference("MessageComment", RC_MessageComment, "'") '// ' rem
+  ReadPreference("MessageParMismatched", RC_MessageParMismatched, "MISMATCHED PARENTHESES")
+  ReadPreference("MessageParOpening", RC_MessageParOpening, "MISSING OPENING PARENTHESIS")
+  ReadPreference("MessageParClosing", RC_MessageParClosing, "MISSING CLOSING PARENTHESIS")
+  ReadPreference("MessageQuoteMismatched", RC_MessageQuoteMismatched, "MISMATCHED QUOTES")
+  ReadPreference("MessageInCodeBlock", RC_MessageInCodeBlock, " IN CODE BLOCK")
+  
+  'Set the macro storage location
+  ReadPreference("MacroStorageLocation", RC_MacroStorageLocation, "Macro")
+End Sub
 
 'Words to replace
 Dim RC_ReplaceList() As String = Array ("!", "Not", "endif", "End If", "endselect", "End Select", "endsub", "End Sub", "endfunction", "End Function", "endtry", "End Try")
 
 'Keywords to CaPiTaLiSe
 Dim RC_Words() As String = Array ( _
-"AddHandler", "AddressOf", "Aggregates", "Alias", "And", "Array", "As", "Assigns", "Attributes", "Auto", _
+"AddHandler", "AddressOf", "Aggregates", "Alias", "And", "Array", "as", "Assigns", "Attributes", "Auto", _
 "Boolean", "Break", "ByRef", "Byte", "ByVal", _
 "Call", "Case", "Catch", "CGFloat", "CFStringRef", "CType", "Class", "Color", "Const", "Continue", "CString", "Currency", _
 "Declare", "Delegate", "Dim", "Do", "Double", "DownTo", _
@@ -47,7 +61,7 @@ Dim RC_Words() As String = Array ( _
 "Select", "Selector", "Self", "Shared", "Short", "Single", "Soft", "Static", "Step", "String", "Structure", "Sub", "Super", _
 "Text", "Then", "To", "True", "Try", _
 "UInt8", "UInt16", "UInt32", "UInt64", "UInteger", "Until", "Using", _
-"Variant", _
+"Var", "Variant", _
 "WeakAddressOf", "Wend", "While", "With", "WString", _
 "Xor")
 
@@ -94,6 +108,7 @@ Dim RC_WindowsDeclareList() As String = Array ( _
 "W_DWORD32", "UInt32", _
 "W_DWORD64", "UInt64", _
 "W_EXECUTION_STATE", "UInt32", _
+"W_FARPROC", "Integer", _
 "W_FILEOP_FLAGS", "UInt16", _
 "W_FLOAT", "Single", _
 "W_HACCEL", "Integer", _
@@ -169,7 +184,7 @@ Dim RC_WindowsDeclareList() As String = Array ( _
 "W_PBOOL", "Int32", _
 "W_PBOOLEAN", "UInt8", _
 "W_PBYTE", "Byte", _
-"W_PCHAR", "Int8", _
+"W_PCHAR", "CString", _
 "W_PCSTR", "CString", _
 "W_PCTSTR", "WString/CString*", _
 "W_PCWSTR", "WString", _
@@ -220,7 +235,7 @@ Dim RC_WindowsDeclareList() As String = Array ( _
 "W_PULONG64", "UInt64", _
 "W_PUSHORT", "UInt16", _
 "W_PVOID", "Ptr*", _
-"W_PWCHAR", "UInt16", _
+"W_PWCHAR", "WString", _
 "W_PWORD", "UInt16", _
 "W_PWSTR", "WString/Ptr*", _
 "W_QWORD", "UInt64", _
@@ -258,40 +273,37 @@ Dim RC_WindowsDeclareList() As String = Array ( _
 "W_WPARAM", "UInteger" _
 )
 
-Sub LoadPreferences()
-  'You can alter the defaults of this script by changing the value of the last parameter of ReadPreference below
-  'However its best to do this in your project as an updated script will reset your changes
-  
-  'Set the default storage location for constants, we read this in first so they can be moved
-  'We always read this in from App.ConstantStorageLocation (you can change the default below)
-  ReadPreference_ConstStorageLocation("ConstantStorageLocation", RC_ConstStorageLocation, "App.")
-  
-  'Set the prefix for all constant names
-  ReadPreference("Prefix", RC_Prefix, "")
-  
-  'Set the constant defaults
-  ReadPreference("DebugLevel", RC_DebugLevel, 0)
-  ReadPreference("PadParInside", RC_PadParInside, False)
-  ReadPreference("PadParOutside", RC_PadParOutside, False)
-  ReadPreference("PadEmptyParInside", RC_PadEmptyParInside, False)
-  ReadPreference("RemoveEmptyPar", RC_RemoveEmptyPar, False)
-  ReadPreference("PadComma", RC_PadComma, True)
-  ReadPreference("PadOperators", RC_PadOperators, True)
-  ReadPreference("PadIIf", RC_PadIIf, False)
-  ReadPreference("PadLineContinuation", RC_PadLineContinuation, True)
-  ReadPreference("Comment", RC_Comment, "")
-  ReadPreference("PadCommentBefore", RC_PadCommentBefore, "")
-  ReadPreference("PadCommentAfter", RC_PadCommentAfter, "")
-  ReadPreference("MessageComment", RC_MessageComment, "'")
-  ReadPreference("MessageParMismatched", RC_MessageParMismatched, "MISMATCHED PARENTHESES")
-  ReadPreference("MessageParOpening", RC_MessageParOpening, "MISSING OPENING PARENTHESIS")
-  ReadPreference("MessageParClosing", RC_MessageParClosing, "MISSING CLOSING PARENTHESIS")
-  ReadPreference("MessageQuoteMismatched", RC_MessageQuoteMismatched, "MISMATCHED QUOTES")
-  ReadPreference("MessageInCodeBlock", RC_MessageInCodeBlock, " IN CODE BLOCK")
-  
-  'Set the macro storage location
-  ReadPreference("MacroStorageLocation", RC_MacroStorageLocation, "Macro")
-End Sub
+Dim IDEVersion As String = ConstantValue("Xojo.IDEVersion")
+Dim APIVersion As Integer = If(IDEVersion = "", 1, 2)
+
+Debug("IDEVersion=>" + IDEVersion + "<", 2)
+Debug("APIVersion=" + Str(APIVersion), 2)
+
+Dim RC_Prefix As String
+
+Dim RC_ConstStorageLocation As String
+
+Dim RC_ForceCase As String
+Dim RC_DimVar As String
+Dim RC_PadParInside As Boolean
+Dim RC_PadParOutside As Boolean
+Dim RC_PadEmptyParInside As Boolean
+Dim RC_RemoveEmptyPar As Boolean
+Dim RC_PadComma As Boolean
+Dim RC_PadOperators As Boolean
+Dim RC_PadIIf As Boolean
+Dim RC_PadLineContinuation As Boolean
+Dim RC_Comment As String
+Dim RC_PadCommentBefore As String 'We use a string here instead of a boolean because this is a tristate variable
+Dim RC_PadCommentAfter As String 'We use a string here instead of a boolean because this is a tristate variable
+Dim RC_MessageComment As String
+Dim RC_MessageParMismatched As String
+Dim RC_MessageParOpening As String
+Dim RC_MessageParClosing As String
+Dim RC_MessageQuoteMismatched As String
+Dim RC_MessageInCodeBlock As String
+
+Dim RC_MacroStorageLocation As String
 
 Sub InitWords()
   RC_Words.Concat(RC_Compiler_Constants)
@@ -301,6 +313,10 @@ Sub InitWords()
   'Read in and process additional ReplaceWords, we'll add these to RC_ReplaceList
   Dim ReplaceWords As String
   ReadPreference("ReplaceWords", ReplaceWords, "")
+  
+  Debug("ReplaceWords=>" + ReplaceWords + "<", 2)
+  Debug("RC_ReplaceList=>" + str(RC_ReplaceList.UBound) + "<", 2)
+  
   If ReplaceWords <> "" Then
     Dim c As Integer
     c = ReplaceWords.CountFields(",")
@@ -311,6 +327,9 @@ Sub InitWords()
       RC_ReplaceList.Concat(s)
     End If
   End If
+  
+  Debug("RC_ReplaceList=>" + str(RC_ReplaceList.UBound) + "<", 2)
+  DebugArray(RC_ReplaceList, 2)
   
   'Merge in the list of windows delcares
   RC_ReplaceList.Concat(RC_WindowsDeclareList)
@@ -410,11 +429,13 @@ Sub CleanBlock()
       'Use some local variables so we don't need to jump around so much
       Dim TokenTextBackOne As String = GetTokenText(TokenTextHistory, 1)
       Dim TokenTextBackTwo As String = GetTokenText(TokenTextHistory, 2)
+      Dim TokenTextBackThree As String = GetTokenText(TokenTextHistory, 3)
       
       Dim TokenTypeBackOne As Integer = GetTokenType(TokenTypeHistory, 1)
       Dim TokenTypeBackTwo As Integer = GetTokenType(TokenTypeHistory, 2)
+      Dim TokenTypeBackThree As Integer = GetTokenType(TokenTypeHistory, 3)
       
-      Debug("TT=>" + TokenTextCurrent + "<=" + Str(TokenTypeCurrent) + " s=>" + s + "< pTT=" + Str(TokenTypeBackOne) + " ppTT=" + Str(TokenTypeBackTwo) + " aNS=" + If(allowNextSpace, "True", "False"), 1)
+      Debug("TT=>" + TokenTextCurrent + "<=" + Str(TokenTypeCurrent) + " s=>" + s + "< pTT=" + Str(TokenTypeBackOne) + " ppTT=" + Str(TokenTypeBackTwo) + " pppTT=" + Str(TokenTypeBackThree) + " aNS=" + If(allowNextSpace, "True", "False"), 1)
       
       'Main select
       Select Case TokenTypeCurrent
@@ -427,7 +448,7 @@ Sub CleanBlock()
       Case 40 '(
         If isInMSDNCodeBlock And MSDN_Return <> "" And MSDN_Call <> "" And MSDN_Type = "" And MSDN_Var = "" Then
           'We're at the end of the first line so we can build the declare
-          s = s + "Declare " + If(MSDN_Return = "void", "Sub", "Function") + " " + MSDN_Call + " Lib ""REPLACE_ME.dll"" Alias """ + MSDN_Call + """ ( _"
+          s = s + RC_Words_Formatted("Declare") + " " + If(MSDN_Return = "void", RC_Words_Formatted("Sub"), RC_Words_Formatted("Function")) + " " + MSDN_Call + " " + RC_Words_Formatted("Lib") + " ""REPLACE_ME.dll"" " + RC_Words_Formatted("Alias") + " """ + MSDN_Call + """ ( _"
           parCount = parCount + 1
           inContinuation = True
           allowNextSpace = False
@@ -620,7 +641,7 @@ Sub CleanBlock()
         If isInMSDNCodeBlock And TokenTypeBackOne = 41 Then
           'Remove the ; from the end of the msdn code block and add the return
           If MSDN_Return <> "void" Then
-            s = s + " As "
+            s = s + " " + RC_Words_Formatted("As") + " "
             'Inject the token so it can be handled by the conversion routine later on
             TokenTextCurrent = "w_" + MSDN_Return
             skipToken = False
@@ -634,36 +655,62 @@ Sub CleanBlock()
         End If
         
       Case TOKEN_TK_AS '262
+        If APIVersion = 1 And TokenTextHistory(0).Lowercase = "var" And (RC_DimVar = "Dim" Or RC_DimVar = "") Then
+          'We have to do this here because API1 doesn't have a token for Var so when we find an As we check if there's a Var at the start
+          s = RC_Words_Formatted("Dim") + Right(s, len(s) - 4)
+        End If
+      
         'Always put a space before an As no matter if it follows a ) like in a Declare
         s = s + " "
         allowNextSpace = True
         
-      Case TOKEN_TK_THEN '266
+      Case TOKEN_TK_DIM '265
+        If APIVersion = 2 And RC_DimVar = "Var" Then
+          'APIVersion checked here to stop us going to Var in pre API2 editions
+          s = RC_Words_Formatted("Var")
+          allowNextSpace = True
+          skipToken = True
+        End If
+		
+      Case TOKEN_TK_THEN '267 API2 - 266 API1
         'This is a special case for THEN as it seems to magically appear when hitting SHIFT+ENTER on an IF
         If s = "" Then s = s + " "
-        s = s + " Then"
+        s = s + " " + RC_Words_Formatted("Then")
         allowNextSpace = True
         skipToken = True
-        
+		
+      Case 266 'TOKEN_TK_VAR '266 'All commented values after this are -1 when running on API1 not too confusing
+        'We have to put this out of order and use a hard coded value of 266 because
+        'a) TOKEN_TK_VAR doesn't exist in API1 if we checked against that in pre 2019r2 versions the script would fail
+        'b) When 266 is actually hit above in API1 we don't really care about this one here because we find Var using TOKEN_TK_AS in API1
+        'c) Xojo decided to inject 266, I assume to keep things neat at their end but it doesn't make my life easy, thanks!
+        If APIVersion = 2 Then
+          If RC_DimVar = "Dim" Then
+            s = RC_Words_Formatted("Dim")
+            allowNextSpace = True
+            skipToken = True
+          End If
+        End If
+        		
       Case TOKEN_TK_MOD, TOKEN_TK_AND, TOKEN_TK_OR, TOKEN_TK_XOR, TOKEN_TK_TO '264 277 278 345 283
         'Always put a space before these as they will end up merging if we don't
         s = s + " "
         allowNextSpace = True
         
-      Case TOKEN_TK_STEP '297
+      Case TOKEN_TK_STEP '298
         'Always put a space before a Step, it looks funny if we don't
         s = s + " "
         allowNextSpace = True
         
-      Case TOKEN_TK_ISA '298
+      Case TOKEN_TK_ISA '299
         'Always put a space before an IsA no matter if it follows a ) with RC_PadPasOutside false
         s = s + " "
         allowNextSpace = True
         
-      Case TOKEN_IDENTIFIER '362
+      Case TOKEN_IDENTIFIER '363
         'Part of the conversion of #define ABC 0x0001 To Const ABC = &h0001
         If TokenTypeBackOne = 35 And TokenTextBackOne = "#define" Then
-          s = Left(s, Len(s) - 7) + "Const " + TokenText + If(RC_PadOperators, " =", "=")
+          s = Left(s, Len(s) - 7) + RC_Words_Formatted("Const") + " " + TokenText + If(RC_PadOperators, " =", "=")
           allowNextSpace = RC_PadOperators
           skipToken = True
           
@@ -678,7 +725,9 @@ Sub CleanBlock()
           
         ElseIf TokenTypeBackOne = 45 Then '-
           If RC_PadOperators Then
-            Select Case TokenTypeBackTwo                         
+            Select Case TokenTypeBackTwo
+            Case 44 ',
+              'Drop the space after the - if we have , -a
             Case TOKEN_TK_IF '258
               If TokenTypeBackOne = 45 Then '-
                 'if -a
@@ -691,7 +740,7 @@ Sub CleanBlock()
               '  *   +   -   /   <   =   >   \   ^    =            >=              <=              <>              NOT
               'Drop the space if we follow the above so we can do a = a - -a
               
-            Case TOKEN_TK_RETURN '290
+            Case TOKEN_TK_RETURN '291
               'Drop the space after a - that is following a Return so we can
               'Return -a
               
@@ -725,7 +774,7 @@ Sub CleanBlock()
             ElseIf MSDN_Var = "" Then
               MSDN_Var = TokenTextCurrent
               Debug("MSDN_Var=>" + MSDN_Type, 2)
-              s = s + MSDN_Var + " As "
+              s = s + MSDN_Var + " " + RC_Words_Formatted("As") + " "
               'Inject the token so it can be handled by the conversion routine later on
               TokenTextCurrent = "w_" + MSDN_Type
               inContinuation = True
@@ -733,8 +782,8 @@ Sub CleanBlock()
             End If
             
           Else
-            If TokenTextCurrent = "reformat_code_script_version" Then
-              s = s + "Reformat Code Script Version v" + RC_Version
+            If TokenTextCurrent = "rc_version" Then
+              s = s + "'Reformat Code Script Version v" + RC_Version
               skipToken = True
             Else
               'All generic tokens pass through here
@@ -749,7 +798,7 @@ Sub CleanBlock()
           
         End If
         
-      Case TOKEN_STRING '364
+      Case TOKEN_STRING '365
         If allowNextSpace Then
           s = s + " "
         End If
@@ -774,7 +823,7 @@ Sub CleanBlock()
         End If
         skipToken = True
         
-      Case TOKEN_UNMATCHEDQUOTES '373
+      Case TOKEN_UNMATCHEDQUOTES '374
         'Handle Unmatched Quotes
         
         Dim tmp As String = Line(currentLineNumber)
@@ -790,7 +839,7 @@ Sub CleanBlock()
         'Break out of the current line and move onto the next, this line makes me feel dirty
         Continue For
         
-      Case TOKEN_LINE_CONTINUATION '375
+      Case TOKEN_LINE_CONTINUATION '376
         inContinuation = True
         s = s + If(RC_PadLineContinuation, " _", "_")
         skipToken = True
@@ -861,10 +910,12 @@ Sub CleanBlock()
         Dim found As Integer = RC_Words.IndexOf(TokenTextCurrent)
         
         If found > -1 Then
-          TokenTextCurrent = RC_Words(found)
-          s = s + TokenTextCurrent
+          Debug("Found >" + TokenTextCurrent + "< inside RC_Words", 2)
+          TokenTextCurrent = RC_Words(found) 
+          s = s + RC_Words_Formatted(TokenTextCurrent)
         Else
           'If there's something we dont know (like a variable) then we just insert it without modification
+          Debug("Found FAILED >" + TokenTextCurrent + "< inside RC_Words", 2)
           
           Dim cont As Boolean = False
           Dim pos As Integer
@@ -874,12 +925,21 @@ Sub CleanBlock()
           Do
             pos = RC_ReplaceList.IndexOf(TokenTextCurrent, pos)
             If pos = -1 Then
+              Debug("Found FAILED >" + TokenTextCurrent + "< inside RC_ReplaceList", 2)
               s = s + TokenTextCurrent
               cont = True
             Else
+              Debug("Found >" + TokenTextCurrent + "< inside RC_ReplaceList", 2)
               If pos Mod 2 = 0 Then
                 'Make sure the word is in the find slot (first of the pair)
-                s = s + RC_ReplaceList(pos + 1)
+                Select Case RC_ForceCase
+                Case "Uppercase"
+                  s = s + RC_ReplaceList(pos + 1).Uppercase
+                Case "Lowercase"
+                  s = s + RC_ReplaceList(pos + 1).Lowercase
+                Case Else
+                  s = s + RC_ReplaceList(pos + 1)
+                End Select
                 cont = True
               Else
                 'If we found a word in the replace slot then skip it
@@ -1013,6 +1073,7 @@ End Sub
 
 'DebugLog handler
 Sub Debug(message As String, level As Integer)
+  'Note: DebugLog does not work in 2019r1 & 2019r1.1 due to #55388 - I put this comment here so I would stop forgetting this
   If RC_DebugLevel >= level Then DebugLog(message)
 End Sub
 
@@ -1132,7 +1193,7 @@ Sub RenderRemainingLine(rl As String, ByRef s As String)
     ElseIf rPos > 0 And (rPos < aPos Or aPos = 0) And (rPos < sPos Or sPos = 0) Then
       commentPos = rPos + 4
       If RC_Comment = "" Then
-        comment = "Rem"
+        comment = RC_Words_Formatted("Rem")
       Else
         comment = RC_Comment
       End If
@@ -1255,4 +1316,25 @@ Function RemoveString(Extends source As String, remove As String, removeAllMatch
     s = left(s, c - 1) + right(source, len(s) - c - len(remove) + 1)
     If Not removeAllMatches Then Return s 'return after one hit otherwise we run until we get them all
   Loop Until False
+End Function
+
+Sub DebugArray(ByRef arr() As String, level As Integer)
+  If RC_DebugLevel >= level Then
+    Debug("DEBUGGING ARRAY -----START-----", 2)
+    For n As Integer = 0 To arr.Ubound
+      Debug(">" + arr(n) + "<", 2)
+    Next
+    Debug("DEBUGGING ARRAY ------END------", 2)
+  End If
+End Sub
+
+Function RC_Words_Formatted(word As String) As String
+  Select Case RC_ForceCase
+  Case "Uppercase"
+    Return RC_Words(RC_Words.IndexOf(word)).Uppercase
+  Case "Lowercase"
+    Return RC_Words(RC_Words.IndexOf(word)).Lowercase
+  Case Else
+    Return RC_Words(RC_Words.IndexOf(word))
+  End Select
 End Function
