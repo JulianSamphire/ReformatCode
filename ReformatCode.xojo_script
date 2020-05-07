@@ -1,4 +1,4 @@
-Dim RC_Version As String = "0.17" 'Type rc_version to see this at runtime
+Dim RC_Version As String = "0.18" 'Type rc_version to see this at runtime
 Dim RC_DebugLevel As Integer' = 2 'Uncomment this if you want to debug preferences before RC_DebugLevel is set (see LoadPreferences)
 
 'Set up script preferences
@@ -44,7 +44,7 @@ Dim RC_ReplaceList() As String = Array ("!", "Not", "endif", "End If", "endselec
 
 'Keywords to CaPiTaLiSe
 Dim RC_Words() As String = Array ( _
-"AddHandler", "AddressOf", "Aggregates", "Alias", "And", "Array", "as", "Assigns", "Attributes", "Auto", _
+"AddHandler", "AddressOf", "Aggregates", "Alias", "And", "Array", "As", "Assigns", "Attributes", "Auto", _
 "Boolean", "Break", "ByRef", "Byte", "ByVal", _
 "Call", "Case", "Catch", "CGFloat", "CFStringRef", "CType", "Class", "Color", "Const", "Continue", "CString", "Currency", _
 "Declare", "Delegate", "Dim", "Do", "Double", "DownTo", _
